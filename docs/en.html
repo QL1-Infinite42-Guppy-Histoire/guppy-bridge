@@ -41,13 +41,6 @@
           </span>
         </label>
       </div>
-      <div id="modeBox" class="hidden" style="margin-top:12px;">
-        <span class="note" style="display:block;margin-bottom:4px;">Route</span>
-        <div class="chips" style="margin:0;">
-          <button type="button" id="modeStdBtn" class="primary">Standard route</button>
-          <button type="button" id="modeExpBtn">Experimental fee-free route (unverified)</button>
-        </div>
-      </div>
       <label class="field"><span>Token</span>
         <select id="tokenSel"></select>
       </label>
@@ -107,14 +100,12 @@
         mailbox (delivered(messageId)) plus the recipient's balance.
       </p>
       <p class="note">
-        Experimental fee-free route (42 Chain → BSC / Ethereum only, optional and clearly labelled):
-        approves the token to the token's Hyperlane warp router and calls transferRemote with value 0,
-        bypassing the BridgeRouter — so the usual 2 USDT/USDC fee is skipped. Measured live on
-        2026-11-07: the USDT/USDC/WBTC warp routers' mailbox is the Infinite mailbox, their hook is
-        the zero address, and quoteGasPayment is 0 for both destinations. Delivery this way is NOT
-        proven yet — that is what a first small test send will settle (suggested: 0.1 USDT to BSC;
-        the standard route's 1.0 USDT minimum is a BridgeRouter setting and does not apply here).
-        If it does not arrive, the sent amount may be stuck. The standard route above remains the default.
+        Fee-free direct route — tested and closed on 2026-11-07: we tested sending directly
+        through the token's warp contract, bypassing the official router, with a real
+        0.1 USDT send (42 Chain → BSC). It does not work: the warp contracts only accept
+        sends that come from the official BridgeRouter, so every send has to go through
+        that router and its 2 USDT/USDC fee applies. The full test record is in the
+        project README.
       </p>
       <p class="note">
         Disabled after live checks on 2026-11-07: sending FROM BNB Smart Chain and FROM Ethereum

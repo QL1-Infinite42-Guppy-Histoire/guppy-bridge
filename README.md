@@ -86,27 +86,34 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - 最大はいずれも事実上無制限（2^256−1）。BSC／ETH 発の旧バージョン契約では
   `feeBps()`／`feeFlat()` も存在せずエラーでした。
 
-## 実験ルート（手数料0・直接ワープ）— 42 Chain → BSC／Ethereum のみ（任意・初期設定は通常ルート）
-ユーザーの判断（2026-11-07、選択肢②）で追加した実験機能です。通常ルートは置き換えません。
+## 実験ルート（手数料0・直接ワープ）— テスト済み・閉鎖（2026-11-07、v0.3.0 で削除）
+ユーザーの判断（2026-11-07、選択肢②）で v0.2.0 に追加した実験機能です。合意した実地テストの
+結果、**仕組みとして不可能**であることが硬い証拠つきで判明したため、サイトから削除しました
+（通常ルートは影響を受けていません）。
 
-- 送り方：BridgeRouter を通さず、トークンの **Hyperlane ワープルーターへ直接**使用許可をして
-  `transferRemote(宛先, bytes32(受け取る人), 金額)` を金額 0 で呼びます。
+- 送り方（だったもの）：BridgeRouter を通さず、トークンの **Hyperlane ワープルーターへ直接**
+  使用許可をして `transferRemote(宛先, bytes32(受け取る人), 金額)` を金額 0 で呼ぶ。
   USDT ワープ `0xaf16100C…`、USDC ワープ `0xe20C0c64…`、WBTC ワープ `0x111031c2…`。
-- これで何が無料になるか：通常ルートのブリッジ手数料（USDT/USDC の一律 2.0）と、
-  WBTC の中継手数料（約2.932 [42]）がかかりません（USDT/USDC の中継手数料は通常ルートでも 0）。
-- 実測した事実（2026-11-07）：3ワープともコード 10,487 バイト、`mailbox()` ＝ Infinite
-  メールボックス `0xac70cdD7…`、`hook()` ＝ ゼロアドレス、`quoteGasPayment(宛先)` ＝ 0
-  （BSC・Ethereum とも。なお quoteGasPayment は引数1つの形式のみ応答し、(uint32,bytes) 形式はエラー）。
-  BridgeRouter のアドレスから staticCall した dry-run は、通常の allowance 不足
-  （spender＝ワープルーター）でのみ失敗し、呼び出し元の制限は見つかりませんでした。
-- **到着は未検証です。** この方法で実際に届くかどうかは、ユーザーの初回の少額テスト送信で
-  確かめます。サイト上では「実験ルート（手数料0・到着未検証）」と明示し、リスク警告
-  （なくしても困らない少額だけ・届かない場合は stuck の可能性）を表示します。
-  最小金額は発明せず、合意した初回テストとして案内文で「BSC へ 0.1 USDT」を勧めています
-  （通常ルートの最小 1.0 USDT は BridgeRouter の設定で、ワープルートには適用されません）。
-- 到着見守りは通常ルートと同じ仕組みで、localStorage の記録に
-  `routeType: "experimental-warp"` の印を付けます（結果を送信 tx から後で検証できるように）。
-- 手数料方式の差し替えは `src/fees.js` の実験分岐だけが対象です。
+  目的は、通常ルートのブリッジ手数料（USDT/USDC の一律 2.0）の回避でした。
+- **実地テスト（2026-11-07）**：ユーザーが合意したテスト（0.1 USDT、42 Chain → BSC、実験ルート）を
+  実行。使用許可（approve）は成功し（使用許可 user→warp ＝ 0.1 USDT、残高 0.15 USDT を
+  チェーン上で確認）、しかし `warp.transferRemote(56, recipient, 0.1e18)` はウォレットの
+  ガス見積もり（estimateGas）の段階で "execution reverted" となり、送信できませんでした。
+- **再現（同日）**：ユーザーのアドレスからオフチェーンで正確に再現。`eth_call` と
+  `estimateGas` の両方が、カスタムエラー **`0x0c3dba28(sender)`** で revert しました。
+  セレクタ `0x0c3dba28` は USDT ワープ自身のバイトコード（10,487 バイト）の中に存在し、
+  トークン側のバイトコードには存在しません。
+- **呼び出し元の切り分け（同日）**：USDT ワープの `transferRemote` への模擬呼び出しは、
+  EOA からでも、DEX ルーター契約からでも、ワープの所有者／デプロイヤー `0xe15c7747…` からでも、
+  すべて `0x0c3dba28(caller)` で revert しました。このチェックを通過するのは
+  **BridgeRouter のアドレスだけ**です（BridgeRouter からは通常の ERC20 allowance チェックまで
+  進みます）。
+- **結論**：Infinite 側のワープルーターは、対になる BridgeRouter からの `transferRemote` しか
+  受け付けない設計です。直接ワープによる迂回は、Infinite 発のどのルートでも成立しません。
+  ユーザーの資金は無事でした（残高は不変）。
+- サイト上では、42 Chain → BSC／Ethereum を選んだときに短い注記を表示します
+  （「手数料無料の直接ルートは2026-11-07に実地テストしましたが、できませんでした。…」）。
+  画面に残る送信経路は通常ルートだけです。
 
 ## 無効にしているルート（理由つき・サイト上にも表示）
 - **BSC から送る／Ethereum から送る（全トークン）**：契約が旧バージョン（1.1.0／1.2.0）で、
@@ -169,22 +176,27 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   Infinite-source BridgeRouters are VERSION 1.3.0, not paused, token matches
   `/api/state`, destination allowed, min/max sane, both quotes answer. QL1 warp
   routers: 11,922 bytes of code, `mailbox()` = the QL1 mailbox, `localDomain()` = 766.
-- **Experimental fee-free route (42 Chain → BSC/Ethereum, opt-in; standard route
-  stays the default)**: added 2026-11-07 at the user's decision. Approves the
-  token to the token's Hyperlane warp router (USDT `0xaf16100C…`, USDC
-  `0xe20C0c64…`, WBTC `0x111031c2…`) and calls `transferRemote` with value 0,
-  bypassing the BridgeRouter — skipping the flat 2.0 USDT/USDC fee (and WBTC's
-  ~2.932 [42] messaging fee). Measured live 2026-11-07: all three warps have
-  10,487 bytes of code, `mailbox()` = the Infinite mailbox, `hook()` = the zero
-  address, `quoteGasPayment(dst)` = 0 for BSC and Ethereum (single-uint32 form;
-  the (uint32,bytes) form reverts). A staticCall dry-run from the BridgeRouter's
-  address failed only on the standard ERC20 allowance check — no caller gating
-  found. **Delivery is NOT proven**: the user's first small test send settles
-  it, the UI says so plainly with a risk warning, no minimum is invented
-  (the agreed first test — 0.1 USDT to BSC — is the suggested amount; the
-  standard route's 1.0 USDT minimum is a BridgeRouter setting that does not
-  bind the warp route), and experimental sends are
-  tagged `routeType: "experimental-warp"` in the persisted arrival watch.
+- **Experimental fee-free route — TESTED AND CLOSED (2026-11-07, removed in
+  v0.3.0)**: v0.2.0 added an opt-in route that approved the token to the
+  token's Hyperlane warp router (USDT `0xaf16100C…`, USDC `0xe20C0c64…`, WBTC
+  `0x111031c2…`) and called `transferRemote` with value 0, bypassing the
+  BridgeRouter to skip the flat 2.0 USDT/USDC fee. The user then made the
+  agreed test: 0.1 USDT, 42 Chain -> BSC, experimental route. The approve
+  succeeded (allowance user->warp = 0.1 USDT on-chain; balance 0.15 USDT),
+  but the wallet's estimateGas on `warp.transferRemote(56, recipient,
+  0.1e18)` reverted: "execution reverted". Reproduced exactly off-chain from
+  the user's address: eth_call and estimateGas both revert with custom
+  error **0x0c3dba28(sender)**. The selector 0x0c3dba28 is present in the
+  USDT warp's own bytecode (10,487 B) and NOT in the token's. Simulated
+  calls to the USDT warp's transferRemote from an EOA, from the DEX router
+  contract, and from the warp owner/deployer 0xe15c7747… ALL revert with
+  0x0c3dba28(caller). ONLY the BridgeRouter address gets past this check
+  (it then fails on ordinary ERC20 allowance). Conclusion: the
+  Infinite-side warp routers accept transferRemote solely from their
+  paired BridgeRouter, by design. The direct-warp bypass cannot work on
+  any Infinite-origin route. User funds unaffected (balance unchanged).
+  The site now shows a short note to this effect when 42 Chain -> BSC /
+  Ethereum is selected, and only the standard route remains.
 - **Disabled, with reasons shown in the UI**: sending FROM BSC and FROM Ethereum
   (older BridgeRouters, 1.1.0 / 1.2.0, whose `quoteNative` reverts — the
   messaging fee cannot be checked before sending; receiving on those chains

@@ -13,34 +13,18 @@
 //   - QL1 source (no BridgeRouter): bridge fee 0, messaging fee 0
 //       (warp router transferRemote with value 0; sampled on real sends).
 //
-// A future fee-free variant (direct-warp route, or an operator-funded
-// reimbursement/sponsor scheme) would replace ONLY this module: the rest
-// of the site consumes the normalized shape returned by getLiveQuote().
+// The fee-free direct-warp variant that briefly lived here (v0.2.0) was
+// tested with a real send on 2026-11-07 and PROVEN IMPOSSIBLE — the
+// Infinite warp routers accept transferRemote solely from their paired
+// BridgeRouter (custom error 0x0c3dba28) — and removed in v0.3.0.
+// An operator-funded reimbursement/sponsor scheme would still replace
+// ONLY this module: the rest of the site consumes the normalized shape
+// returned by getLiveQuote().
 import {
-  checkBridgeRouter, checkWarpRouter, checkWarpDirect, experimentalAvailable, scaleToDst,
+  checkBridgeRouter, checkWarpRouter, scaleToDst,
 } from "./chain.js";
 
-export async function getLiveQuote(route, tokenEntry, amountRaw, mode = "standard") {
-  // EXPERIMENTAL direct-warp route (42 Chain -> BSC/Ethereum only, added
-  // 2026-11-07 at the user's decision): bypasses the BridgeRouter, so the
-  // flat 2.0 USDT/USDC bridge fee is skipped and quoteGasPayment(dst) = 0
-  // means no messaging fee either. Delivery through this route is NOT
-  // proven — the UI labels it experimental/unverified and the send flow
-  // tags its arrival watch accordingly. If delivery fails to materialize,
-  // removing this branch (and the mode toggle) restores standard-only.
-  if (mode === "experimental" && experimentalAvailable(route)) {
-    const c = await checkWarpDirect(route, tokenEntry);
-    return {
-      ...c,
-      feeModel: "experimental-warp-direct",
-      messagingFeeRaw: c.gasPayment,
-      bridgeFeeRaw: 0n,
-      // full amount arrives (no fee deducted), converted to dst decimals
-      receiveRaw: amountRaw != null && amountRaw > 0n
-        ? scaleToDst(amountRaw, tokenEntry.src.decimals, tokenEntry.dst.decimals)
-        : null,
-    };
-  }
+export async function getLiveQuote(route, tokenEntry, amountRaw) {
   if (tokenEntry.src.bridgeRouter) {
     const c = await checkBridgeRouter(route, tokenEntry, amountRaw);
     return {

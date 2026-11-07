@@ -3,7 +3,6 @@ import assert from "node:assert";
 import {
   parseAmount, formatAmount, percentOf, scaleToDst,
   encodeRecipient32, isAddress, extractMessageId, staticDisabled, routeFor,
-  experimentalAvailable,
   TOPIC_BRIDGE_INITIATED, TOPIC_DISPATCH_ID,
 } from "../src/chain.js";
 
@@ -50,13 +49,6 @@ assert.equal(staticDisabled(ql1Inf, "OSAK"), null);
 assert.equal(staticDisabled(bscInf, "USDT"), "bscEthSrc");
 assert.equal(staticDisabled(ethInf, "WBTC"), "bscEthSrc");
 assert.equal(staticDisabled(infBsc, "USDT"), null);
-
-// experimental direct-warp route: 42 Chain -> BSC/ETH only
-assert.equal(experimentalAvailable(routeFor("infinite", "bsc")), true);
-assert.equal(experimentalAvailable(routeFor("infinite", "ethereum")), true);
-assert.equal(experimentalAvailable(routeFor("infinite", "ql1")), false);
-assert.equal(experimentalAvailable(routeFor("ql1", "infinite")), false);
-assert.equal(experimentalAvailable(routeFor("bsc", "infinite")), false);
 
 // route table shape mirrors /api/state: 6 directional routes, 26 token entries
 const { ROUTES } = await import("../src/chain.js");

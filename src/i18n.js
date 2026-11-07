@@ -73,9 +73,7 @@ const STRINGS = {
     maxWarnNative: "Note: MAX uses your whole token balance. Make sure you still have gas coin left for the messaging fee and gas.",
     detailsRouter: "Bridge contract",
     detailsWarp: "Warp router (QL1 sends use this directly)",
-    expNote: "Experimental route: this skips the usual bridge fee (2 USDT/USDC) by sending straight through the token's warp contract, bypassing the BridgeRouter. Delivery is NOT proven yet — nobody has confirmed that a send this way arrives. Only send a small amount you can afford to lose — the suggested first test is 0.1 USDT to BSC. (The standard route has a 1.0 USDT minimum, but that is a BridgeRouter setting and does not apply to this warp route.) If it does not arrive, the sent amount may be stuck.",
-    expRouteOk: "Warp contract checked live (mailbox + gas quote 0) — but delivery this way is still unverified",
-    watchExp: "Experimental route (fee-free, unverified)",
+    expClosedNote: "A fee-free direct route was tested on 2026-11-07 and is not possible: the bridge contracts only accept sends through the official router, which charges the 2 USDT/USDC fee.",
     loading: "Loading…",
   },
   ja: {
@@ -142,9 +140,7 @@ const STRINGS = {
     maxWarnNative: "注意: MAX はトークン残高を全部使います。中継手数料とガス代のガスコインが残っているか確認してください。",
     detailsRouter: "ブリッジ契約",
     detailsWarp: "ワープルーター（QL1 からの送信はこれを直接使います）",
-    expNote: "実験ルート：通常のブリッジ手数料（USDT/USDC は2）を避けるため、BridgeRouter を通さず、トークンのワープ契約へ直接送ります。到着はまだ実証されていません — この方法で届いた確認はまだありません。なくしても困らない少額だけを送ってください — 最初のテストは BSC へ 0.1 USDT がおすすめです（通常ルートの最小 1.0 USDT は BridgeRouter の設定で、このワープルートには適用されません）。届かない場合、送った分が stuck（戻らない）可能性があります。",
-    expRouteOk: "ワープ契約はライブ確認済み（メールボックス一致・ガスの見積もり0）— ただしこの方法での到着は未検証です",
-    watchExp: "実験ルート（手数料0・未検証）",
+    expClosedNote: "手数料無料の直接ルートは2026-11-07に実地テストしましたが、できませんでした。ブリッジの契約は公式ルーター経由の送信しか受け付けない仕組みで、そのルーターが USDT/USDC の手数料（2）を取ります。",
     loading: "読み込み中…",
   },
 };
