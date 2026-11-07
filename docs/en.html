@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bridge — Guppy's Guide</title>
+<meta name="description" content="Move tokens between 42 Chain, QL1, BNB Smart Chain and Ethereum. A Guppy's Guide tool with the same routes as bridge.zaphod.one." />
+<link rel="stylesheet" href="./style.css?v=1" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="sub" style="margin-bottom:2px;">🐟 Guppy's Guide — Don't Panic — a hitchhiker's toolbox for 42 Chain &amp; QL1</p>
+      <h1>Bridge</h1>
+      <p class="sub">Move tokens between chains: 42 Chain, QL1, BNB Smart Chain and Ethereum. Same routes as bridge.zaphod.one. Signing is done with MetaMask or any EVM wallet.</p>
+      <p class="sub">All products are open source (MIT)</p>
+    </div>
+    <div class="top-right">
+      <span class="lang-switch"><label>Language / 言語 <select id="langSel"><option value="en" selected>English</option><option value="ja">日本語</option></select></label></span>
+      <div id="accountBox" class="row"></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="walletMissing" class="card warn hidden">
+      <h2>No supported wallet found</h2>
+      <p>This site works with any EVM wallet (MetaMask, FoxWallet in EVM mode, the GuppyWallet extension, and others). On a PC, install a wallet extension first and then open this page; on a phone, open it in your wallet app's built-in browser. You can still look at routes and fees without a wallet.</p>
+      <p><a href="https://metamask.io/download/" target="_blank" rel="noreferrer">MetaMask download</a> / <a href="https://foxwallet.com/download" target="_blank" rel="noreferrer">FoxWallet download</a></p>
+    </section>
+
+    <section class="card">
+      <h2>Send tokens to another chain</h2>
+      <div class="grid2">
+        <label class="field"><span>From</span>
+          <select id="fromSel"></select>
+        </label>
+        <label class="field"><span>To</span>
+          <span class="row" style="margin-top:0;">
+            <select id="toSel" style="flex:1;"></select>
+            <button id="flipBtn" type="button" title="Swap direction">⇄</button>
+          </span>
+        </label>
+      </div>
+      <label class="field"><span>Token</span>
+        <select id="tokenSel"></select>
+      </label>
+      <p id="routeNote" class="note hidden"></p>
+      <label class="field"><span>Amount</span>
+        <input id="amountInput" class="amount" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+      </label>
+      <div class="chips">
+        <button type="button" class="chip" data-pct="25">25%</button>
+        <button type="button" class="chip" data-pct="50">50%</button>
+        <button type="button" class="chip" data-pct="75">75%</button>
+        <button type="button" class="chip" data-pct="100">MAX</button>
+      </div>
+      <p class="note"><span id="balLine"></span> <span id="nativeLine"></span></p>
+      <label class="field"><span>Recipient address (on the destination chain)</span>
+        <input id="recipientInput" class="amount" placeholder="0x…" autocomplete="off" spellcheck="false" />
+      </label>
+      <p class="note">Defaults to your own address. You can change it — double-check it, tokens sent to a wrong address cannot be recovered.</p>
+    </section>
+
+    <section class="card">
+      <h2>Check before you send</h2>
+      <div class="kv"><span>You send</span><b id="qSend">—</b></div>
+      <div class="kv"><span>Estimated receive</span><b id="qReceive">—</b></div>
+      <div class="kv"><span>Bridge fee</span><b id="qBridgeFee">—</b></div>
+      <div class="kv"><span>Messaging fee (paid in the source chain's gas coin)</span><b id="qNativeFee">—</b></div>
+      <div class="kv"><span>Minimum</span><b id="qMin">—</b></div>
+      <div class="kv"><span>Maximum</span><b id="qMax">—</b></div>
+      <div class="kv"><span>Recipient</span><b id="qRecipient" class="addr">—</b></div>
+      <div class="kv"><span>Contract used</span><b id="qRouter">—</b></div>
+      <div class="kv"><span>Route check</span><b id="qRouteState">—</b></div>
+      <p id="validLine" class="status"></p>
+      <div class="row">
+        <button id="sendBtn" class="primary" disabled>Bridge it</button>
+        <span id="sendStatus" class="status"></span>
+      </div>
+      <p class="note">Arrival usually takes a few minutes (one measured delivery took about 5½ minutes). Even if this page is closed, the tokens will still arrive — reopening this page resumes the watch.</p>
+      <p class="note">This site has been checked with live read-only calls, but no real transfer has been sent from it yet. For your first send, use a small amount.</p>
+    </section>
+
+    <section id="watchPanel" class="card hidden">
+      <h2>Arrival watch</h2>
+      <p id="watchResume" class="note"></p>
+      <div id="watchBody"></div>
+      <div class="row"><button id="watchClear">Clear watch</button></div>
+    </section>
+
+    <details class="card">
+      <summary>Details</summary>
+      <p class="note" id="detailsRouterLine">—</p>
+      <p class="note">
+        Routes and contract addresses mirror https://bridge.zaphod.one/api/state (fetched 2026-11-07).
+        Sends from 42 Chain / BSC / Ethereum go through the Zaphod BridgeRouter: approve the token to the
+        BridgeRouter, then transferRemote with the messaging fee from a fresh quoteNative call paid on top.
+        Sends from QL1 have no BridgeRouter: the token is approved to the Hyperlane warp router and
+        transferRemote is called with value 0. Arrival is checked on the destination chain's Hyperlane
+        mailbox (delivered(messageId)) plus the recipient's balance.
+      </p>
+      <p class="note">
+        Disabled after live checks on 2026-11-07: sending FROM BNB Smart Chain and FROM Ethereum
+        (their BridgeRouters are older versions — 1.1.0 / 1.2.0 — and their messaging-fee quote reverts,
+        so the fee cannot be checked before sending; receiving on those chains works), and OSAK from
+        42 Chain to QL1 (that direction has zero sends in the contract's whole history — unproven).
+        Every other route was verified live: contract version, paused flag, token address, allowed
+        destination, minimum/maximum and both quotes answered.
+      </p>
+      <p class="note">
+        More tools: <a href="https://ql1-infinite42-guppy-histoire.github.io/links/" target="_blank" rel="noreferrer">Guppy's Guide — product links</a> ·
+        <a href="https://ql1-infinite42-guppy-histoire.github.io/dex-aggregator/" target="_blank" rel="noreferrer">DEX Aggregator</a>
+      </p>
+    </details>
+
+    <p class="foot note">
+      Gas for the send itself is shown on your wallet's confirmation screen. Private keys are handled
+      only inside your wallet and are never passed to this site.
+    </p>
+  </main>
+
+  <script src="./app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ブリッジ — グッピーズガイド</title>
+<meta name="description" content="42 Chain・QL1・BNB Smart Chain・Ethereum の間でトークンを移動できます。bridge.zaphod.one と同じルートの、グッピーズガイドのツールです。" />
+<link rel="stylesheet" href="./style.css?v=1" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="sub" style="margin-bottom:2px;">🐟 グッピーズガイド（Guppy's Guide） — あわてないで。42 Chain・QL1 のための道具箱</p>
+      <h1>ブリッジ</h1>
+      <p class="sub">チェーンの間でトークンを移動できます（42 Chain、QL1、BNB Smart Chain、Ethereum）。bridge.zaphod.one と同じルートです。署名は MetaMask などの EVM ウォレットで行います。</p>
+      <p class="sub">全ての製品はオープンソース（MITライセンス）です</p>
+    </div>
+    <div class="top-right">
+      <span class="lang-switch"><label>言語 / Language <select id="langSel"><option value="en">English</option><option value="ja" selected>日本語</option></select></label></span>
+      <div id="accountBox" class="row"></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="walletMissing" class="card warn hidden">
+      <h2>対応ウォレットが見つかりません</h2>
+      <p>このサイトは EVM ウォレット全般（MetaMask、FoxWallet の EVM モード、GuppyWallet 拡張機能など）で使います。PC ではウォレット拡張機能を入れてから開くか、スマホではウォレットアプリ内のブラウザで開いてください。ウォレットが無くても、ルートと手数料の確認はできます。</p>
+      <p><a href="https://metamask.io/download/" target="_blank" rel="noreferrer">MetaMask ダウンロード</a> ／ <a href="https://foxwallet.com/download" target="_blank" rel="noreferrer">FoxWallet ダウンロード</a></p>
+    </section>
+
+    <section class="card">
+      <h2>別のチェーンへ送る</h2>
+      <div class="grid2">
+        <label class="field"><span>送るチェーン</span>
+          <select id="fromSel"></select>
+        </label>
+        <label class="field"><span>受け取るチェーン</span>
+          <span class="row" style="margin-top:0;">
+            <select id="toSel" style="flex:1;"></select>
+            <button id="flipBtn" type="button" title="向きを入れ替える">⇄</button>
+          </span>
+        </label>
+      </div>
+      <label class="field"><span>トークン</span>
+        <select id="tokenSel"></select>
+      </label>
+      <p id="routeNote" class="note hidden"></p>
+      <label class="field"><span>金額</span>
+        <input id="amountInput" class="amount" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+      </label>
+      <div class="chips">
+        <button type="button" class="chip" data-pct="25">25%</button>
+        <button type="button" class="chip" data-pct="50">50%</button>
+        <button type="button" class="chip" data-pct="75">75%</button>
+        <button type="button" class="chip" data-pct="100">MAX</button>
+      </div>
+      <p class="note"><span id="balLine"></span> <span id="nativeLine"></span></p>
+      <label class="field"><span>受け取るアドレス（受け取り側チェーン）</span>
+        <input id="recipientInput" class="amount" placeholder="0x…" autocomplete="off" spellcheck="false" />
+      </label>
+      <p class="note">最初はあなたのアドレスが入っています。変更もできますが、間違えると取り戻せないのでよく確認してください。</p>
+    </section>
+
+    <section class="card">
+      <h2>送る前に確認</h2>
+      <div class="kv"><span>送る量</span><b id="qSend">—</b></div>
+      <div class="kv"><span>受け取る量（見込み）</span><b id="qReceive">—</b></div>
+      <div class="kv"><span>ブリッジ手数料</span><b id="qBridgeFee">—</b></div>
+      <div class="kv"><span>中継手数料（送る側チェーンのガスコインで支払い）</span><b id="qNativeFee">—</b></div>
+      <div class="kv"><span>最小</span><b id="qMin">—</b></div>
+      <div class="kv"><span>最大</span><b id="qMax">—</b></div>
+      <div class="kv"><span>受け取る人</span><b id="qRecipient" class="addr">—</b></div>
+      <div class="kv"><span>使う契約</span><b id="qRouter">—</b></div>
+      <div class="kv"><span>ルート確認</span><b id="qRouteState">—</b></div>
+      <p id="validLine" class="status"></p>
+      <div class="row">
+        <button id="sendBtn" class="primary" disabled>ブリッジする</button>
+        <span id="sendStatus" class="status"></span>
+      </div>
+      <p class="note">到着にはたいてい数分かかります（実測した1件は約5分半でした）。このページを閉じてもトークンは届きます。再び開くと見守りを再開します。</p>
+      <p class="note">このサイトは読み取り専用のライブ確認まで済んでいますが、実際の送金はまだ試していません。初めて送るときは少額で試してください。</p>
+    </section>
+
+    <section id="watchPanel" class="card hidden">
+      <h2>到着を見守る</h2>
+      <p id="watchResume" class="note"></p>
+      <div id="watchBody"></div>
+      <div class="row"><button id="watchClear">見守りをやめる</button></div>
+    </section>
+
+    <details class="card">
+      <summary>詳細</summary>
+      <p class="note" id="detailsRouterLine">—</p>
+      <p class="note">
+        ルートと契約アドレスは https://bridge.zaphod.one/api/state（2026-11-07 取得）の写しです。
+        42 Chain／BSC／Ethereum から送る場合は Zaphod の BridgeRouter を使い、トークンの使用許可のあと、
+        quoteNative でその場で取り直した中継手数料を上乗せして transferRemote を呼びます。
+        QL1 から送る場合は BridgeRouter が無いので、Hyperlane のワープルーターへ使用許可をして、
+        金額 0 で transferRemote を直接呼びます。到着は、受け取り側チェーンの Hyperlane メールボックスの
+        delivered(messageId) と、受け取る人の残高で確認します。
+      </p>
+      <p class="note">
+        2026-11-07 のライブ確認で無効にしたもの: BNB Smart Chain から送る場合と Ethereum から送る場合
+        （ブリッジ契約が旧バージョン 1.1.0／1.2.0 で、中継手数料の見積もりがエラーになり、
+        送る前に手数料を確認できないため。この2チェーンで受け取ることはできます）、および
+        OSAK の 42 Chain → QL1（この向きの送信記録が契約の全履歴で 0 件のため未証明）。
+        それ以外のルートは、契約のバージョン・停止状態・トークンのアドレス・宛先の許可・
+        最小／最大・2種類の見積もりが全てライブで答えることを確認済みです。
+      </p>
+      <p class="note">
+        その他のツール: <a href="https://ql1-infinite42-guppy-histoire.github.io/links/" target="_blank" rel="noreferrer">グッピーズガイド — 製品リンク集</a> ・
+        <a href="https://ql1-infinite42-guppy-histoire.github.io/dex-aggregator/" target="_blank" rel="noreferrer">DEX アグリゲーター</a>
+      </p>
+    </details>
+
+    <p class="foot note">
+      送信自体のガス代は、ウォレットの確認画面に表示されます。秘密鍵はウォレットの中だけで扱われ、このサイトには渡りません。
+    </p>
+  </main>
+
+  <script src="./app.js?v=1"></script>
+</body>
+</html>
