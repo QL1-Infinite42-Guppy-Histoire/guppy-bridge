@@ -102,7 +102,8 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - **到着は未検証です。** この方法で実際に届くかどうかは、ユーザーの初回の少額テスト送信で
   確かめます。サイト上では「実験ルート（手数料0・到着未検証）」と明示し、リスク警告
   （なくしても困らない少額だけ・届かない場合は stuck の可能性）を表示します。
-  最小金額は発明せず、案内文で「BSC へ数 USDT」を勧めています。
+  最小金額は発明せず、合意した初回テストとして案内文で「BSC へ 0.1 USDT」を勧めています
+  （通常ルートの最小 1.0 USDT は BridgeRouter の設定で、ワープルートには適用されません）。
 - 到着見守りは通常ルートと同じ仕組みで、localStorage の記録に
   `routeType: "experimental-warp"` の印を付けます（結果を送信 tx から後で検証できるように）。
 - 手数料方式の差し替えは `src/fees.js` の実験分岐だけが対象です。
@@ -180,7 +181,9 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   address failed only on the standard ERC20 allowance check — no caller gating
   found. **Delivery is NOT proven**: the user's first small test send settles
   it, the UI says so plainly with a risk warning, no minimum is invented
-  ("a few USDT to BSC" is the suggested test), and experimental sends are
+  (the agreed first test — 0.1 USDT to BSC — is the suggested amount; the
+  standard route's 1.0 USDT minimum is a BridgeRouter setting that does not
+  bind the warp route), and experimental sends are
   tagged `routeType: "experimental-warp"` in the persisted arrival watch.
 - **Disabled, with reasons shown in the UI**: sending FROM BSC and FROM Ethereum
   (older BridgeRouters, 1.1.0 / 1.2.0, whose `quoteNative` reverts — the

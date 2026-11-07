@@ -112,8 +112,9 @@
         bypassing the BridgeRouter — so the usual 2 USDT/USDC fee is skipped. Measured live on
         2026-11-07: the USDT/USDC/WBTC warp routers' mailbox is the Infinite mailbox, their hook is
         the zero address, and quoteGasPayment is 0 for both destinations. Delivery this way is NOT
-        proven yet — that is what a first small test send will settle. If it does not arrive, the
-        sent amount may be stuck. The standard route above remains the default.
+        proven yet — that is what a first small test send will settle (suggested: 0.1 USDT to BSC;
+        the standard route's 1.0 USDT minimum is a BridgeRouter setting and does not apply here).
+        If it does not arrive, the sent amount may be stuck. The standard route above remains the default.
       </p>
       <p class="note">
         Disabled after live checks on 2026-11-07: sending FROM BNB Smart Chain and FROM Ethereum
