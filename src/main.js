@@ -9,7 +9,7 @@
 // Routes that failed live verification are disabled in chain.js
 // (staticDisabled) and again dynamically if a live check fails.
 import {
-  CHAINS, SEL, routeFor, tokenFor, sendTarget, staticDisabled,
+  CHAINS, SEL, routeFor, tokenFor, sendTarget, staticDisabled, experimentalAvailable,
   encUint, encAddr, isAddress, parseAmount, formatAmount, percentOf,
   scaleToDst, readTokenBalance, readNativeBalance, readAllowance,
   fetchDelivered, extractMessageId,
@@ -30,6 +30,7 @@ const state = {
   fromKey: "infinite",
   toKey: "ql1",
   tokenKey: "QOM",
+  mode: "standard", // "standard" | "experimental" (direct-warp, 42 -> BSC/ETH only)
   tokenBal: null,
   nativeBal: null,
   check: null, // last live check result
@@ -79,6 +80,20 @@ function fillToOptions() {
 }
 function currentRoute() { return routeFor(state.fromKey, state.toKey); }
 function currentToken() { return tokenFor(currentRoute(), state.tokenKey); }
+// The contract a send actually calls / approves, per mode.
+function currentTarget(tk) {
+  if (state.mode === "experimental" && experimentalAvailable(currentRoute()))
+    return tk.src.router; // warp router directly
+  return sendTarget(tk);
+}
+function updateModeBox() {
+  const route = currentRoute();
+  const avail = experimentalAvailable(route);
+  if (!avail) state.mode = "standard";
+  $("modeBox").classList.toggle("hidden", !avail);
+  $("modeStdBtn").classList.toggle("primary", state.mode === "standard");
+  $("modeExpBtn").classList.toggle("primary", state.mode === "experimental");
+}
 function fillTokenOptions() {
   const sel = $("tokenSel");
   const route = currentRoute();
@@ -95,9 +110,13 @@ function fillTokenOptions() {
 }
 function updateRouteNote() {
   const route = currentRoute();
+  updateModeBox();
   const dis = route ? staticDisabled(route, state.tokenKey) : null;
   const note = $("routeNote");
-  if (dis === "osak") { note.textContent = t("osakNote"); note.classList.remove("hidden"); }
+  if (state.mode === "experimental" && experimentalAvailable(route)) {
+    note.textContent = t("expNote"); note.classList.remove("hidden");
+  }
+  else if (dis === "osak") { note.textContent = t("osakNote"); note.classList.remove("hidden"); }
   else if (dis === "bscEthSrc") { note.textContent = t("bscEthSrcNote"); note.classList.remove("hidden"); }
   else if (route && route.from === "ql1") { note.textContent = t("ql1Note"); note.classList.remove("hidden"); }
   else { note.textContent = ""; note.classList.add("hidden"); }
@@ -105,8 +124,10 @@ function updateRouteNote() {
   const d = $("detailsRouterLine");
   if (tk) {
     d.textContent =
-      (tk.src.bridgeRouter ? t("detailsRouter") : t("detailsWarp")) +
-      `: ${sendTarget(tk)} · ${DISPLAY[state.fromKey]} → ${DISPLAY[state.toKey]} · ${tk.key}` +
+      (state.mode === "experimental" && experimentalAvailable(route)
+        ? t("detailsWarp")
+        : (tk.src.bridgeRouter ? t("detailsRouter") : t("detailsWarp"))) +
+      `: ${currentTarget(tk)} · ${DISPLAY[state.fromKey]} → ${DISPLAY[state.toKey]} · ${tk.key}` +
       ` · token ${tk.src.erc20}`;
   } else d.textContent = "";
 }
@@ -209,12 +230,12 @@ async function refreshQuote() {
   }
   $("qSend").textContent = amount != null ? formatAmount(amount, tk.src.decimals) + " " + tk.key : "—";
   $("qRecipient").textContent = $("recipientInput").value.trim() || "—";
-  $("qRouter").textContent = shortAddr(sendTarget(tk));
+  $("qRouter").textContent = shortAddr(currentTarget(tk));
   // live check
   $("qRouteState").textContent = t("routeChecking");
   let check = null;
   try {
-    check = await getLiveQuote(route, tk, amount);
+    check = await getLiveQuote(route, tk, amount, state.mode);
   } catch (e) { check = null; }
   if (seq !== quoteSeq) return;
   state.check = check;
@@ -226,7 +247,22 @@ function renderQuote(route, tk, amount, amountErr, check) {
   const sendBtn = $("sendBtn");
   let problem = null;
   if (amountErr) problem = amountErr;
-  if (check && check.kind === "bridgeRouter") {
+  if (check && check.kind === "warpDirect") {
+    // Experimental route: no verified minimum (we do not invent one) and no
+    // bridge/messaging fee as long as the live gas quote stays 0.
+    $("qMin").textContent = "—";
+    $("qMax").textContent = "—";
+    $("qBridgeFee").textContent = "0 " + tk.key;
+    if (check.gasPayment != null) {
+      $("qNativeFee").textContent = formatAmount(check.gasPayment, 18) + " " + CHAINS[state.fromKey].native.symbol;
+    } else $("qNativeFee").textContent = "—";
+    $("qReceive").textContent = amount != null && check.receiveRaw != null
+      ? formatAmount(check.receiveRaw, tk.dst.decimals) + " " + tk.key : "—";
+    if (!(check.codeBytes > 0) || !check.mailbox ||
+        check.mailbox.toLowerCase() !== CHAINS.infinite.mailbox.toLowerCase() ||
+        check.gasPayment === null)
+      problem = problem || t("routeQuoteFailed");
+  } else if (check && check.kind === "bridgeRouter") {
     $("qMin").textContent = check.min != null ? formatAmount(check.min, tk.src.decimals) + " " + tk.key : "—";
     $("qMax").textContent = check.max != null && check.max < (1n << 200n)
       ? formatAmount(check.max, tk.src.decimals) + " " + tk.key : "∞";
@@ -273,7 +309,7 @@ function renderQuote(route, tk, amount, amountErr, check) {
     if (state.nativeBal <= check.quoteNative.totalNative) nativeWarn = t("errNativeLow");
   }
   $("qRouteState").textContent = problem && !dis ? problem :
-    (dis ? "—" : t("routeOk"));
+    (dis ? "—" : (check && check.kind === "warpDirect" ? t("expRouteOk") : t("routeOk")));
   $("validLine").textContent = dis ? "" : (nativeWarn || problem || "");
   $("validLine").className = "status" + ((nativeWarn || problem) ? " err" : "");
   const canSend = !!state.account && !state.sending && !dis && !problem && amount != null && amount > 0n && !nativeWarn;
@@ -295,8 +331,15 @@ async function doSend() {
     await ensureChain(state.fromKey);
     // fresh re-quote at send time (never reuse a stale messaging fee)
     let totalNative = 0n;
-    if (tk.src.bridgeRouter) {
-      const fresh = await getLiveQuote(route, tk, amount);
+    const isExp = state.mode === "experimental" && experimentalAvailable(route);
+    if (isExp) {
+      const fresh = await getLiveQuote(route, tk, amount, "experimental");
+      if (fresh.gasPayment === null || !(fresh.codeBytes > 0) || !fresh.mailbox ||
+          fresh.mailbox.toLowerCase() !== CHAINS.infinite.mailbox.toLowerCase())
+        throw new Error(t("routeQuoteFailed"));
+      totalNative = fresh.gasPayment; // measured 0; pay whatever the live quote says
+    } else if (tk.src.bridgeRouter) {
+      const fresh = await getLiveQuote(route, tk, amount, "standard");
       if (!fresh.quoteNative || fresh.paused || fresh.allowed !== true)
         throw new Error(t("routeQuoteFailed"));
       if (fresh.min != null && amount < fresh.min)
@@ -307,7 +350,7 @@ async function doSend() {
     let dstBalBefore = null;
     try { dstBalBefore = await readTokenBalance(state.toKey, tk.dst.erc20, recipient); }
     catch (e) { /* optional */ }
-    const target = sendTarget(tk);
+    const target = currentTarget(tk);
     // approve only if allowance is not enough; exact amount
     const allowance = await readAllowance(state.fromKey, tk.src.erc20, state.account, target);
     if (allowance < amount) {
@@ -332,6 +375,7 @@ async function doSend() {
     const messageId = extractMessageId(rc);
     const watch = {
       txHash: hash, messageId,
+      routeType: isExp ? "experimental-warp" : (tk.src.bridgeRouter ? "standard-bridgerouter" : "standard-ql1-warp"),
       fromKey: state.fromKey, toKey: state.toKey, tokenKey: state.tokenKey,
       amountRaw: amount.toString(), recipient,
       dstErc20: tk.dst.erc20, dstDecimals: tk.dst.decimals,
@@ -374,6 +418,8 @@ function renderWatch(w, delivered, dstBal) {
   lines.push(`<div class="kv"><span>${t("watchTx")}</span><b><a href="${explorerTx(w.fromKey, w.txHash)}" target="_blank" rel="noreferrer">${w.txHash.slice(0, 10)}…</a></b></div>`);
   if (w.messageId) lines.push(`<div class="kv"><span>${t("watchMsg")}</span><b class="addr">${w.messageId.slice(0, 18)}…</b></div>`);
   lines.push(`<div class="kv"><span>${w.tokenKey} ${DISPLAY[w.fromKey]} → ${DISPLAY[w.toKey]}</span><b>${formatAmount(BigInt(w.amountRaw), w.dstDecimals)} ${w.tokenKey}</b></div>`);
+  if (w.routeType === "experimental-warp")
+    lines.push(`<div class="kv"><span>⚠</span><b>${t("watchExp")}</b></div>`);
   if (dstBal != null)
     lines.push(`<div class="kv"><span>${t("watchBalance")}</span><b>${formatAmount(dstBal, w.dstDecimals)} ${w.tokenKey}</b></div>`);
   lines.push(delivered
@@ -468,6 +514,8 @@ function init() {
       refreshQuote();
     });
   });
+  $("modeStdBtn").addEventListener("click", () => { state.mode = "standard"; refreshQuote(); });
+  $("modeExpBtn").addEventListener("click", () => { state.mode = "experimental"; refreshQuote(); });
   $("sendBtn").addEventListener("click", doSend);
   $("watchClear").addEventListener("click", () => {
     try { localStorage.removeItem(WATCH_KEY); } catch (e) { /* ignore */ }

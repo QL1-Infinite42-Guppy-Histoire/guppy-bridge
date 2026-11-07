@@ -41,6 +41,13 @@
           </span>
         </label>
       </div>
+      <div id="modeBox" class="hidden" style="margin-top:12px;">
+        <span class="note" style="display:block;margin-bottom:4px;">ルート</span>
+        <div class="chips" style="margin:0;">
+          <button type="button" id="modeStdBtn" class="primary">通常ルート</button>
+          <button type="button" id="modeExpBtn">実験ルート（手数料0・到着未検証）</button>
+        </div>
+      </div>
       <label class="field"><span>トークン</span>
         <select id="tokenSel"></select>
       </label>
@@ -98,6 +105,15 @@
         QL1 から送る場合は BridgeRouter が無いので、Hyperlane のワープルーターへ使用許可をして、
         金額 0 で transferRemote を直接呼びます。到着は、受け取り側チェーンの Hyperlane メールボックスの
         delivered(messageId) と、受け取る人の残高で確認します。
+      </p>
+      <p class="note">
+        実験ルート（手数料0・42 Chain → BSC／Ethereum のみ・任意で選択式、画面でも明示）：
+        BridgeRouter を通さず、トークンの Hyperlane ワープルーターへ使用許可をして、金額 0 で
+        transferRemote を直接呼びます。そのため通常の手数料（USDT/USDC は2）がかかりません。
+        2026-11-07 の実測：USDT／USDC／WBTC のワープルーターは、メールボックスが Infinite の
+        メールボックスと一致、hook はゼロアドレス、quoteGasPayment は両宛先とも 0 でした。
+        ただし、この方法での到着はまだ実証されていません — 初回の少額テスト送信で確かめるものです。
+        届かない場合、送った分が戻らない可能性があります。通常ルートが初期設定のままです。
       </p>
       <p class="note">
         2026-11-07 のライブ確認で無効にしたもの: BNB Smart Chain から送る場合と Ethereum から送る場合

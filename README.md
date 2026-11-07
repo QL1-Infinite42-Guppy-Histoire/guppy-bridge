@@ -86,6 +86,27 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - 最大はいずれも事実上無制限（2^256−1）。BSC／ETH 発の旧バージョン契約では
   `feeBps()`／`feeFlat()` も存在せずエラーでした。
 
+## 実験ルート（手数料0・直接ワープ）— 42 Chain → BSC／Ethereum のみ（任意・初期設定は通常ルート）
+ユーザーの判断（2026-11-07、選択肢②）で追加した実験機能です。通常ルートは置き換えません。
+
+- 送り方：BridgeRouter を通さず、トークンの **Hyperlane ワープルーターへ直接**使用許可をして
+  `transferRemote(宛先, bytes32(受け取る人), 金額)` を金額 0 で呼びます。
+  USDT ワープ `0xaf16100C…`、USDC ワープ `0xe20C0c64…`、WBTC ワープ `0x111031c2…`。
+- これで何が無料になるか：通常ルートのブリッジ手数料（USDT/USDC の一律 2.0）と、
+  WBTC の中継手数料（約2.932 [42]）がかかりません（USDT/USDC の中継手数料は通常ルートでも 0）。
+- 実測した事実（2026-11-07）：3ワープともコード 10,487 バイト、`mailbox()` ＝ Infinite
+  メールボックス `0xac70cdD7…`、`hook()` ＝ ゼロアドレス、`quoteGasPayment(宛先)` ＝ 0
+  （BSC・Ethereum とも。なお quoteGasPayment は引数1つの形式のみ応答し、(uint32,bytes) 形式はエラー）。
+  BridgeRouter のアドレスから staticCall した dry-run は、通常の allowance 不足
+  （spender＝ワープルーター）でのみ失敗し、呼び出し元の制限は見つかりませんでした。
+- **到着は未検証です。** この方法で実際に届くかどうかは、ユーザーの初回の少額テスト送信で
+  確かめます。サイト上では「実験ルート（手数料0・到着未検証）」と明示し、リスク警告
+  （なくしても困らない少額だけ・届かない場合は stuck の可能性）を表示します。
+  最小金額は発明せず、案内文で「BSC へ数 USDT」を勧めています。
+- 到着見守りは通常ルートと同じ仕組みで、localStorage の記録に
+  `routeType: "experimental-warp"` の印を付けます（結果を送信 tx から後で検証できるように）。
+- 手数料方式の差し替えは `src/fees.js` の実験分岐だけが対象です。
+
 ## 無効にしているルート（理由つき・サイト上にも表示）
 - **BSC から送る／Ethereum から送る（全トークン）**：契約が旧バージョン（1.1.0／1.2.0）で、
   中継手数料の見積もり `quoteNative` がエラーになり、送る前に手数料を確認できないため。
@@ -147,6 +168,20 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   Infinite-source BridgeRouters are VERSION 1.3.0, not paused, token matches
   `/api/state`, destination allowed, min/max sane, both quotes answer. QL1 warp
   routers: 11,922 bytes of code, `mailbox()` = the QL1 mailbox, `localDomain()` = 766.
+- **Experimental fee-free route (42 Chain → BSC/Ethereum, opt-in; standard route
+  stays the default)**: added 2026-11-07 at the user's decision. Approves the
+  token to the token's Hyperlane warp router (USDT `0xaf16100C…`, USDC
+  `0xe20C0c64…`, WBTC `0x111031c2…`) and calls `transferRemote` with value 0,
+  bypassing the BridgeRouter — skipping the flat 2.0 USDT/USDC fee (and WBTC's
+  ~2.932 [42] messaging fee). Measured live 2026-11-07: all three warps have
+  10,487 bytes of code, `mailbox()` = the Infinite mailbox, `hook()` = the zero
+  address, `quoteGasPayment(dst)` = 0 for BSC and Ethereum (single-uint32 form;
+  the (uint32,bytes) form reverts). A staticCall dry-run from the BridgeRouter's
+  address failed only on the standard ERC20 allowance check — no caller gating
+  found. **Delivery is NOT proven**: the user's first small test send settles
+  it, the UI says so plainly with a risk warning, no minimum is invented
+  ("a few USDT to BSC" is the suggested test), and experimental sends are
+  tagged `routeType: "experimental-warp"` in the persisted arrival watch.
 - **Disabled, with reasons shown in the UI**: sending FROM BSC and FROM Ethereum
   (older BridgeRouters, 1.1.0 / 1.2.0, whose `quoteNative` reverts — the
   messaging fee cannot be checked before sending; receiving on those chains

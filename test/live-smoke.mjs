@@ -15,4 +15,15 @@ await show("infinite", "ethereum", "WBTC", "1");
 await show("infinite", "bsc", "USDC", "100");
 await show("ql1", "infinite", "QOM", "1000");
 await show("bsc", "infinite", "USDT", "100");
+// experimental direct-warp quotes (42 -> BSC/ETH)
+async function showExp(to, sym, amountText) {
+  const route = routeFor("infinite", to);
+  const tk = tokenFor(route, sym);
+  const amount = parseAmount(amountText, tk.src.decimals);
+  const q = await getLiveQuote(route, tk, amount, "experimental");
+  console.log(`EXP infinite->${to} ${sym} ${amountText}: kind=${q.kind} code=${q.codeBytes} mailbox=${q.mailbox} hook=${q.hook} gasPayment=${q.gasPayment} bridgeFee=${q.bridgeFeeRaw} receive=${q.receiveRaw != null ? formatAmount(q.receiveRaw, tk.dst.decimals) : "-"}`);
+}
+await showExp("bsc", "USDT", "100");
+await showExp("ethereum", "USDT", "100");
+await showExp("ethereum", "WBTC", "1");
 console.log("live smoke done");

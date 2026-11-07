@@ -17,6 +17,8 @@ export const SEL = {
   maxTransferAmount: "0xa9e75723",
   transferRemote: "0x81b4e8b4", // transferRemote(uint32,bytes32,uint256)
   mailboxFn: "0xd5438eae", // mailbox()
+  hook: "0x7f5a7c7b", // hook()
+  quoteGasPayment: "0xf2ed8c53", // quoteGasPayment(uint32) — single-arg form (the (uint32,bytes) form reverts on these warps; verified 2026-11-07)
   delivered: "0xe495f1d4", // delivered(bytes32)
   balanceOf: "0x70a08231",
   allowance: "0xdd62ed3e",
@@ -218,6 +220,32 @@ export function decodeString(hex) {
     return new TextDecoder().decode(bytes);
   } catch (e) { return null; }
 }
+// Experimental direct-warp route: only 42 Chain -> BSC / Ethereum.
+// The send target is the token's Hyperlane warp router on Infinite
+// (tokenEntry.src.router). Verified live 2026-11-07 for USDT / USDC / WBTC
+// warps: code 10,487 B, mailbox() = Infinite mailbox, hook() = address(0),
+// quoteGasPayment(dst) = 0 for dst 56 and 1. Delivery is NOT proven.
+export function experimentalAvailable(route) {
+  return !!route && route.from === "infinite" && (route.to === "bsc" || route.to === "ethereum");
+}
+export async function checkWarpDirect(route, tokenEntry) {
+  const warp = tokenEntry.src.router;
+  const dst = CHAINS[route.to];
+  const out = { kind: "warpDirect", target: warp };
+  try {
+    const code = await getCode(route.from, warp);
+    out.codeBytes = code && code !== "0x" ? (code.length - 2) / 2 : 0;
+  } catch (e) { out.codeBytes = null; }
+  try { out.mailbox = decAddr(await ethCall(route.from, warp, SEL.mailboxFn)); }
+  catch (e) { out.mailbox = null; }
+  try { out.hook = decAddr(await ethCall(route.from, warp, SEL.hook)); }
+  catch (e) { out.hook = null; }
+  try {
+    out.gasPayment = decUint(await ethCall(route.from, warp, SEL.quoteGasPayment + encUint(dst.domain)));
+  } catch (e) { out.gasPayment = null; }
+  return out;
+}
+
 // QL1 warp router structural check: code exists + mailbox() == QL1 mailbox.
 export async function checkWarpRouter(route, tokenEntry) {
   const router = tokenEntry.src.router;
