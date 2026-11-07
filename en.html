@@ -108,12 +108,14 @@
         project README.
       </p>
       <p class="note">
-        Disabled after live checks on 2026-11-07: sending FROM BNB Smart Chain and FROM Ethereum
-        (their BridgeRouters are older versions — 1.1.0 / 1.2.0 — and their messaging-fee quote reverts,
-        so the fee cannot be checked before sending; receiving on those chains works), and OSAK from
-        42 Chain to QL1 (that direction has zero sends in the contract's whole history — unproven).
-        Every other route was verified live: contract version, paused flag, token address, allowed
-        destination, minimum/maximum and both quotes answered.
+        Sending FROM BNB Smart Chain and FROM Ethereum works too: their BridgeRouters are older
+        versions (1.1.0 / 1.2.0) whose messaging-fee quote call reverts, so — exactly like the
+        official bridge.zaphod.one frontend — those sends go out with a messaging fee of 0
+        (deliveries on these routes are proven). No route is disabled: all 26 token routes work.
+        One carries a warning instead — OSAK from 42 Chain to QL1 has zero sends in the contract's
+        whole history, so that direction is unproven (the site says so when you select it; test
+        with a small amount first). Every route was verified live: contract version, paused flag,
+        token address, allowed destination, minimum/maximum and quotes.
       </p>
       <p class="note">
         More tools: <a href="https://ql1-infinite42-guppy-histoire.github.io/links/" target="_blank" rel="noreferrer">Guppy's Guide — product links</a> ·

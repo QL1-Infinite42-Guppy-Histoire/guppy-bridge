@@ -10,6 +10,11 @@
 //       paid as msg.value in the source chain's native coin.
 //       Measured 2026-11-07: USDT/USDC routes to BSC/Ethereum quote 0 [42];
 //       QL1 routes and WBTC -> Ethereum quote ~2.932 [42].
+//       EXCEPTION (nativeOptional): the BSC/Ethereum SOURCE routers are
+//       older versions (1.1.0 / 1.2.0) whose quoteNative reverts. Like the
+//       official frontend (and GuppyWallet v2, shipped 2026-10-31), the
+//       messaging fee then falls back to 0 and the send uses value 0;
+//       deliveries on those inbound routes are proven. See chain.js.
 //   - QL1 source (no BridgeRouter): bridge fee 0, messaging fee 0
 //       (warp router transferRemote with value 0; sampled on real sends).
 //
@@ -30,6 +35,9 @@ export async function getLiveQuote(route, tokenEntry, amountRaw) {
     return {
       ...c,
       feeModel: "zaphod-bridgerouter",
+      // true when quoteNative reverted on an older BSC/Ethereum router and
+      // the messaging fee fell back to 0 (nativeOptional behaviour).
+      nativeFallback: !!c.nativeFallback,
       messagingFeeRaw: c.quoteNative ? c.quoteNative.totalNative : null,
       bridgeFeeRaw: c.quoteBridge ? c.quoteBridge.fee : null,
       receiveRaw: c.quoteBridge

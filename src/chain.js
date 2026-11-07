@@ -28,20 +28,37 @@ export const TOPIC_BRIDGE_INITIATED =
 export const TOPIC_DISPATCH_ID =
   "0x788dbc1b7152732178210e7f4d9d010ef016f9eafbe66786bd7169f56e0c353a";
 
-// ---- static route policy (evidence-based, 2026-11-07; see README) ----------
-// OSAK Infinite -> QL1: zero transferRemote sends in the Infinite
-// BridgeRouter's entire history — unproven direction, disabled (same rule
-// as the DEX aggregator).
-// BSC -> Infinite and Ethereum -> Infinite: the source BridgeRouters are
-// older versions (1.1.0 / 1.2.0) whose quoteNative() reverts, so the
-// messaging fee cannot be quoted before sending — disabled until that
-// changes. All other checks on them passed (paused=false, token match,
-// destination allowed, quoteBridge answers).
+// ---- static route policy (user decision, 2026-11-07; see README) ---------
+// NO Zaphod route is disabled on this site (26/26, full parity with
+// bridge.zaphod.one). OSAK Infinite -> QL1 has zero transferRemote sends
+// in the Infinite BridgeRouter's entire history, so it stays UNPROVEN —
+// but per the user's 2026-11-07 decision it is ENABLED here with an
+// unproven-route warning (routeWarning below), not disabled. Scope note:
+// this policy is for the bridge site only; the DEX aggregator keeps its
+// own OSAK-disabled rule (different product, unchanged).
 export function staticDisabled(route, tokenKey) {
-  if (route.from === "infinite" && route.to === "ql1" && tokenKey === "OSAK")
-    return "osak";
-  if (route.from === "bsc" || route.from === "ethereum") return "bscEthSrc";
   return null;
+}
+// Routes that are enabled but must carry a warning when selected.
+// Returns a warning key or null.
+export function routeWarning(route, tokenKey) {
+  if (route && route.from === "infinite" && route.to === "ql1" && tokenKey === "OSAK")
+    return "osak";
+  return null;
+}
+
+// nativeOptional routes: the source BridgeRouters on BSC and Ethereum are
+// older versions (1.1.0 / 1.2.0) whose quoteNative() REVERTS (verified
+// on-chain 2026-10-30). The official bridge.zaphod.one frontend catches
+// that revert and sends transferRemote with msg.value = 0, and deliveries
+// on these routes are real (Zaphod stats at the time: 159 BSC-origin and
+// 116 Ethereum-origin deliveries; GuppyWallet shipped these exact inbound
+// routes live in v2 on 2026-10-31 with this same behaviour). So on these
+// routes a quoteNative failure means "messaging fee 0", NOT "route
+// broken". All other checks (paused, allowedDestinations, quoteBridge,
+// min/max) still apply normally.
+export function nativeOptional(route) {
+  return !!route && (route.from === "bsc" || route.from === "ethereum");
 }
 
 export function routeFor(from, to) {
@@ -177,6 +194,8 @@ export async function checkBridgeRouter(route, tokenEntry, amountRaw) {
   const br = tokenEntry.src.bridgeRouter;
   const dst = CHAINS[route.to];
   const out = { kind: "bridgeRouter", target: br };
+  out.nativeOptional = nativeOptional(route);
+  out.nativeFallback = false;
   const call = async (data) => ethCall(route.from, br, data);
   try { out.version = await call(SEL.version).then((h) => decodeString(h)); }
   catch (e) { out.version = null; }
@@ -195,6 +214,13 @@ export async function checkBridgeRouter(route, tokenEntry, amountRaw) {
       ? { nativeFee: w[0], gasPayment: w[1], totalNative: w[2] }
       : null;
   } catch (e) { out.quoteNative = null; }
+  if (!out.quoteNative && out.nativeOptional) {
+    // Older BSC/Ethereum routers revert quoteNative — mirror the official
+    // frontend (and GuppyWallet v2): treat the messaging fee as 0 and send
+    // with value 0. Deliveries on these routes are proven (see README).
+    out.quoteNative = { nativeFee: 0n, gasPayment: 0n, totalNative: 0n };
+    out.nativeFallback = true;
+  }
   if (amountRaw != null && amountRaw > 0n) {
     try {
       const h = await call(SEL.quoteBridge + encUint(amountRaw));

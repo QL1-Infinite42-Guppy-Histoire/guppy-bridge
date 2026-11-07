@@ -6,10 +6,14 @@
 //     value = quoteNative(dst, "0x").totalNative re-quoted at send time.
 //   QL1 (no BridgeRouter): approve token -> Hyperlane warp router, then
 //     transferRemote with value 0 (every sampled QL1 send paid 0).
-// Routes that failed live verification are disabled in chain.js
-// (staticDisabled) and again dynamically if a live check fails.
+// No route is statically disabled (full Zaphod parity, user decision
+// 2026-11-07); every route is gated by the live check, and OSAK
+// 42 Chain -> QL1 carries an unproven-route warning (chain.js
+// routeWarning). BSC / Ethereum sources use the nativeOptional fee
+// behaviour (their older routers revert quoteNative -> messaging fee 0,
+// like the official frontend); see chain.js / fees.js.
 import {
-  CHAINS, SEL, routeFor, tokenFor, sendTarget, staticDisabled,
+  CHAINS, SEL, routeFor, tokenFor, sendTarget, staticDisabled, routeWarning,
   encUint, encAddr, isAddress, parseAmount, formatAmount, percentOf,
   scaleToDst, readTokenBalance, readNativeBalance, readAllowance,
   fetchDelivered, extractMessageId,
@@ -99,10 +103,12 @@ function fillTokenOptions() {
 }
 function updateRouteNote() {
   const route = currentRoute();
-  const dis = route ? staticDisabled(route, state.tokenKey) : null;
+  const warn = route ? routeWarning(route, state.tokenKey) : null;
   const note = $("routeNote");
-  if (dis === "osak") { note.textContent = t("osakNote"); note.classList.remove("hidden"); }
-  else if (dis === "bscEthSrc") { note.textContent = t("bscEthSrcNote"); note.classList.remove("hidden"); }
+  if (warn === "osak") { note.textContent = t("osakNote"); note.classList.remove("hidden"); }
+  else if (route && (route.from === "bsc" || route.from === "ethereum")) {
+    note.textContent = t("inboundNote"); note.classList.remove("hidden");
+  }
   else if (route && route.from === "ql1") { note.textContent = t("ql1Note"); note.classList.remove("hidden"); }
   else if (route && route.from === "infinite" && (route.to === "bsc" || route.to === "ethereum")) {
     note.textContent = t("expClosedNote"); note.classList.remove("hidden");
@@ -243,7 +249,11 @@ function renderQuote(route, tk, amount, amountErr, check) {
     if (check.quoteNative) {
       $("qNativeFee").textContent =
         formatAmount(check.quoteNative.totalNative, 18) + " " + CHAINS[state.fromKey].native.symbol +
-        (check.quoteNative.totalNative === 0n ? " (" + t("zeroNativeNote") + ")" : "");
+        (check.nativeFallback
+          ? " (" + t("nativeNoQuoteNote") + ")"
+          : check.quoteNative.totalNative === 0n
+            ? " (" + t("zeroNativeNote") + ")"
+            : "");
     } else $("qNativeFee").textContent = "—";
     if (check.quoteBridge && amount != null) {
       $("qBridgeFee").textContent = formatAmount(check.quoteBridge.fee, tk.src.decimals) + " " + tk.key;
@@ -279,9 +289,12 @@ function renderQuote(route, tk, amount, amountErr, check) {
   if (check && check.kind === "bridgeRouter" && check.quoteNative && state.nativeBal != null) {
     if (state.nativeBal <= check.quoteNative.totalNative) nativeWarn = t("errNativeLow");
   }
+  // Unproven-route warning (OSAK 42 Chain -> QL1): shown in the quote
+  // panel, but it is a warning only — it never blocks sending.
+  const warn = routeWarning(route, state.tokenKey) === "osak" ? t("osakNote") : "";
   $("qRouteState").textContent = problem && !dis ? problem :
     (dis ? "—" : t("routeOk"));
-  $("validLine").textContent = dis ? "" : (nativeWarn || problem || "");
+  $("validLine").textContent = dis ? "" : (nativeWarn || problem || warn || "");
   $("validLine").className = "status" + ((nativeWarn || problem) ? " err" : "");
   const canSend = !!state.account && !state.sending && !dis && !problem && amount != null && amount > 0n && !nativeWarn;
   sendBtn.disabled = !canSend;

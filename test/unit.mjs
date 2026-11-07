@@ -2,7 +2,7 @@
 import assert from "node:assert";
 import {
   parseAmount, formatAmount, percentOf, scaleToDst,
-  encodeRecipient32, isAddress, extractMessageId, staticDisabled, routeFor,
+  encodeRecipient32, isAddress, extractMessageId, staticDisabled, routeWarning, nativeOptional, routeFor,
   TOPIC_BRIDGE_INITIATED, TOPIC_DISPATCH_ID,
 } from "../src/chain.js";
 
@@ -43,12 +43,33 @@ const ql1Inf = routeFor("ql1", "infinite");
 const bscInf = routeFor("bsc", "infinite");
 const ethInf = routeFor("ethereum", "infinite");
 const infBsc = routeFor("infinite", "bsc");
-assert.equal(staticDisabled(infQl1, "OSAK"), "osak");
+// OSAK 42 Chain -> QL1 is ENABLED (user decision 2026-11-07, full Zaphod
+// parity on the bridge site) with an unproven-route warning instead of a
+// disable. Nothing is statically disabled anymore.
+assert.equal(staticDisabled(infQl1, "OSAK"), null);
 assert.equal(staticDisabled(infQl1, "QOM"), null);
 assert.equal(staticDisabled(ql1Inf, "OSAK"), null);
-assert.equal(staticDisabled(bscInf, "USDT"), "bscEthSrc");
-assert.equal(staticDisabled(ethInf, "WBTC"), "bscEthSrc");
+assert.equal(routeWarning(infQl1, "OSAK"), "osak");
+assert.equal(routeWarning(infQl1, "QOM"), null);
+assert.equal(routeWarning(ql1Inf, "OSAK"), null);
+assert.equal(routeWarning(bscInf, "USDT"), null);
+// Inbound BSC/ETH -> 42 Chain is ENABLED (2026-11-07 correction): the older
+// source routers revert quoteNative, which the official frontend treats as
+// "messaging fee 0" (nativeOptional) — it is not a disabling condition.
+assert.equal(staticDisabled(bscInf, "USDT"), null);
+assert.equal(staticDisabled(bscInf, "USDC"), null);
+assert.equal(staticDisabled(ethInf, "USDT"), null);
+assert.equal(staticDisabled(ethInf, "USDC"), null);
+assert.equal(staticDisabled(ethInf, "WBTC"), null);
 assert.equal(staticDisabled(infBsc, "USDT"), null);
+
+// nativeOptional applies exactly to routes whose SOURCE chain is BSC/ETH
+assert.equal(nativeOptional(bscInf), true);
+assert.equal(nativeOptional(ethInf), true);
+assert.equal(nativeOptional(infBsc), false);
+assert.equal(nativeOptional(infQl1), false);
+assert.equal(nativeOptional(ql1Inf), false);
+assert.equal(nativeOptional(null), false);
 
 // route table shape mirrors /api/state: 6 directional routes, 26 token entries
 const { ROUTES } = await import("../src/chain.js");

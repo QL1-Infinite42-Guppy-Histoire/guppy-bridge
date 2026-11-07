@@ -36,6 +36,10 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - 42 Chain／BSC／Ethereum から送る場合：Zaphod の **BridgeRouter** へトークンの使用許可をし、
   `quoteNative(宛先, "0x")` の `totalNative` をその場で取り直して上乗せし、
   `transferRemote(宛先ドメイン, bytes32(受け取る人), 金額)` を呼びます。
+  ただし **BSC／Ethereum 発（42 Chain 向け）は例外**です。送信元ルーターが旧バージョン
+  （1.1.0／1.2.0）で `quoteNative` がエラー（revert）になるため、公式サイト
+  bridge.zaphod.one と同じく、中継手数料は **0（金額 0 で送信）** として扱います
+  （この方式は GuppyWallet が 2026-10-30 にオンチェーン検証し、v2 で実装済みのものです）。
 - QL1 から送る場合：BridgeRouter は無いので、**Hyperlane ワープルーター**へ使用許可をし、
   金額 0 で `transferRemote` を直接呼びます（実送信サンプル全件が 0 でした・2026-11-06 検証）。
 - 宛先ドメイン＝宛先チェーンの EVM チェーンID。到着確認は宛先チェーンの Hyperlane
@@ -49,6 +53,10 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - 中継手数料＝`quoteNative` の totalNative。実測（2026-11-07）：
   QL1 向けと WBTC→Ethereum は約 2.932 [42]、USDT／USDC の BSC・Ethereum 向けは **0 [42]**。
   QL1 発は手数料・中継手数料とも 0（ガス代のみ）。
+- **BSC／Ethereum 発（42 Chain 向け）** は、旧契約が見積もり自体を返さない（revert）ため、
+  公式方式どおり中継手数料 **0** で送信します。到着実績は公式統計で BSC 発 159 件・
+  Ethereum 発 116 件（2026-10-30 時点）が記録されています。ブリッジ手数料はこの向きも 0
+  （`quoteBridge` は正常に答え、forward／fee／totalRequired を送信前に確認します）。
 
 ## 受け取る量の計算（小数桁の変換）
 `quoteBridge` の forwardAmount は**送る側トークンの桁**で返ります。受け取る量は
@@ -74,11 +82,11 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 | 42→ETH | USDC | 0xCDbf8dA8… | 1.3.0 | なし | ✓ | ✓ | 0 [42] | 100→98, 2.0 | 1.0 |
 | 42→ETH | WBTC | 0xb436C84a… | 1.3.0 | なし | ✓ | ✓ | 2.932045 [42] | 1→1, 0 | 0.00003 |
 | QL1→42 | QOM 他7種 | ワープルーター（各種） | — | — | — | — | （対象外・金額0） | （手数料0・1:1） | — |
-| BSC→42 | USDT | 0x2f136BaA… | **1.1.0** | なし | ✓ | ✓ | **エラー（revert）** | 100→100, 0 | 1.0 |
-| BSC→42 | USDC | 0x4F69A9cF… | **1.1.0** | なし | ✓ | ✓ | **エラー** | 100→100, 0 | 1.0 |
-| ETH→42 | USDT | 0x56d962fD… | **1.2.0** | なし | ✓ | ✓ | **エラー** | 100→100, 0 | 1.0 |
-| ETH→42 | USDC | 0x1613e840… | **1.1.0** | なし | ✓ | ✓ | **エラー** | 100→100, 0 | 1.0 |
-| ETH→42 | WBTC | 0xF2ecB173… | **1.2.0** | なし | ✓ | ✓ | **エラー** | 1→1, 0 | 0.0008 |
+| BSC→42 | USDT | 0x2f136BaA… | **1.1.0** | なし | ✓ | ✓ | 見積もりなし（revert）→ **0 で送信** | 100→100, 0 | 1.0 |
+| BSC→42 | USDC | 0x4F69A9cF… | **1.1.0** | なし | ✓ | ✓ | 見積もりなし（revert）→ **0 で送信** | 100→100, 0 | 1.0 |
+| ETH→42 | USDT | 0x56d962fD… | **1.2.0** | なし | ✓ | ✓ | 見積もりなし（revert）→ **0 で送信** | 100→100, 0 | 1.0 |
+| ETH→42 | USDC | 0x1613e840… | **1.1.0** | なし | ✓ | ✓ | 見積もりなし（revert）→ **0 で送信** | 100→100, 0 | 1.0 |
+| ETH→42 | WBTC | 0xF2ecB173… | **1.2.0** | なし | ✓ | ✓ | 見積もりなし（revert）→ **0 で送信** | 1→1, 0 | 0.0008 |
 
 - QL1 ワープルーター（8種とも）：コード 11,922 バイト、`mailbox()` ＝ QL1 メールボックス
   `0x2f136BaA…`、`localDomain()` ＝ 766 を確認。配送実績は 2026-11-06 のサンプリングで
@@ -115,15 +123,22 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
   （「手数料無料の直接ルートは2026-11-07に実地テストしましたが、できませんでした。…」）。
   画面に残る送信経路は通常ルートだけです。
 
-## 無効にしているルート（理由つき・サイト上にも表示）
-- **BSC から送る／Ethereum から送る（全トークン）**：契約が旧バージョン（1.1.0／1.2.0）で、
-  中継手数料の見積もり `quoteNative` がエラーになり、送る前に手数料を確認できないため。
-  他の確認（停止状態・token・宛先許可・quoteBridge）は通っています。
-  この2チェーンで**受け取る**こと（42 Chain から送る）は使えます。
-- **OSAK の 42 Chain → QL1**：42 Chain 側 BridgeRouter の全履歴で、この向きの送信が 0 件
-  （未証明）のため。QL1 → 42 Chain の OSAK は使えます（到着サンプル 2/2 確認済み）。
-- なお、サイトは送信直前にもライブ確認をやり直し、停止中・宛先不許可・見積もり失敗の
-  ときは送信ボタンを押せないようにしています。
+## 無効にしているルート
+**ありません（全26トークンルートが有効です）。** bridge.zaphod.one と完全一致させる、
+というユーザーの判断（2026-11-07）によるものです。残っているのは「無効」ではなく
+「警告」が1件だけです：
+- **OSAK の 42 Chain → QL1**：送信は有効です。ただしこの向きの送信は公式ルーターの
+  全履歴で 0 件のため「未証明」であり、サイトではこのルートを選んだときに警告を
+  表示します（仕組みは他のトークンと同じですが到着は未確認。少額テスト推奨）。
+  QL1 → 42 Chain の OSAK は到着サンプル 2/2 確認済みで、通常どおり使えます。
+  なお **DEX アグリゲーターではこの向きを引き続き無効**にしています
+  （別プロダクトであり、そちらの方針は変更していません）。
+- **訂正履歴**：v0.3.0 までは BSC／Ethereum 発（42 Chain 向け）も無効にしていましたが、
+  それは誤りでした。旧契約が `quoteNative` に答えないことは、公式フロントエンドが
+  「中継手数料 0 で送る」合図であり、無効化の理由にはなりません（GuppyWallet が
+  2026-10-30 にオンチェーン検証し、v2 で同じ方式で実装済み）。v0.4.0 で有効化しました。
+- なお、サイトは送信直前にもライブ確認をやり直し、停止中・宛先不許可・`quoteBridge`
+  の見積もり失敗のときは送信ボタンを押せないようにしています。
 
 ## 正直な制限
 - **実際の送金はまだテストしていません。** 読み取りと見積もりは全ルートでライブ確認済みですが、
@@ -163,6 +178,10 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   and call `transferRemote` with `value = quoteNative(dst, "0x").totalNative`
   re-quoted at send time. QL1 has no BridgeRouter: approve to the Hyperlane warp
   router and call `transferRemote` with value 0 (verified on sampled real sends).
+  Exception: BSC/Ethereum as the SOURCE (toward 42 Chain) — their routers are
+  older versions (1.1.0 / 1.2.0) whose `quoteNative` reverts, so, exactly like
+  the official frontend, the messaging fee falls back to 0 and the send uses
+  value 0 ("nativeOptional"; verified on-chain 2026-10-30 for GuppyWallet v2).
 - **Fees (all live-quoted, never hard-coded)**: bridge fee from `quoteBridge` —
   flat 2.0 tokens for USDT/USDC leaving 42 Chain (the contract's on-chain
   feeFlat, set by its Zaphod/MT-side owner; a frontend cannot waive it), 0
@@ -197,10 +216,14 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   any Infinite-origin route. User funds unaffected (balance unchanged).
   The site now shows a short note to this effect when 42 Chain -> BSC /
   Ethereum is selected, and only the standard route remains.
-- **Disabled, with reasons shown in the UI**: sending FROM BSC and FROM Ethereum
-  (older BridgeRouters, 1.1.0 / 1.2.0, whose `quoteNative` reverts — the
-  messaging fee cannot be checked before sending; receiving on those chains
-  works), and OSAK from 42 Chain to QL1 (zero sends in that direction in the
-  router's whole history — unproven; QL1→42 Chain OSAK is enabled).
+- **Disabled routes: none (26/26 — full Zaphod parity; user decision
+  2026-11-07).** Two evidence notes instead of disables: (1) BSC/Ethereum ->
+  42 Chain inbound routes are enabled with the nativeOptional behaviour above
+  (deliveries proven — 159 BSC-origin and 116 Ethereum-origin in Zaphod's
+  stats at 2026-10-30; an earlier build, <= v0.3.0, disabled them by mistake
+  and v0.4.0 fixed that). (2) OSAK from 42 Chain to QL1 is enabled WITH an
+  unproven-route warning (zero sends in that direction in the router's whole
+  history; QL1->42 Chain OSAK is proven, 2/2 sampled). The DEX aggregator
+  keeps its own OSAK-disabled rule — different product, unchanged.
 - **Honest limit**: read/quote-verified only — **no real-money send has been
   made from this site yet**; the first small transfer is the end-to-end check.
