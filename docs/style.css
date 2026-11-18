@@ -1,4 +1,5 @@
 :root, :root[data-theme="light"] {
+  color-scheme: light;
   --bg: #f4f7ff; --card: #ffffff; --line: #dde4f3; --text: #131a2a;
   --muted: #5b6a85; --accent: #2f6bff; --accent2: #ffa51f; --danger: #e5484d;
   --accent-bright: #5b8cff; --accent-deep: #1c4ed8; --violet: #7c5cff;
@@ -12,8 +13,9 @@
   --edge-soft: rgba(19,26,42,.10);
 }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #04060e; --card: #12151f; --line: #272d42; --text: #f2f4fa;
-  --muted: #9aa7c2; --accent: #6b9dff; --accent2: #ffb020; --danger: #ff8589;
+  --muted: #b0bedd; --accent: #6b9dff; --accent2: #ffb020; --danger: #ff8589;
   --accent-bright: #8fb6ff; --accent-deep: #2f5fd0; --violet: #9d85ff;
   --input-bg: #0a0d16; --chip: #1c2233; --success: #2ee6a8;
   --panel: #171c2c;
@@ -69,6 +71,11 @@ button.primary:active:not(:disabled) { transform: translateY(3px);
 .note { color: var(--muted); font-size: 13px; }
 .foot { width: 100%; max-width: 900px; margin-top: 2px; }
 select { background: var(--input-bg); color: var(--text); }
+/* Native dropdown popups follow the theme via color-scheme above; these
+   rules are a belt-and-braces fallback so option text can never render
+   near-white on a light popup (or the reverse) again. */
+select option { background: var(--input-bg); color: var(--text); }
+select option:checked { background: var(--chip); }
 input.amount { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
   background: var(--input-bg); color: var(--text); font-size: 16px; margin: 0; min-height: 44px; }
 input.amount:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(47,107,255,.22); }
@@ -93,6 +100,10 @@ details.card summary { cursor: pointer; font-weight: 700; min-height: 44px; }
 .panel:focus-within { border-color: var(--accent); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .panel-label { color: var(--muted); font-size: 13px; font-weight: 700; }
+/* Dark theme: small labels read washed out at --muted, so panel and
+   recipient labels use the full-strength text color there. */
+:root[data-theme="dark"] .panel-label,
+:root[data-theme="dark"] .field-inline { color: var(--text); }
 .panel-main { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .panel-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .panel-note { margin: 8px 0 0; }
