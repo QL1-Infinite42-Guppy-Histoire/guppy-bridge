@@ -6,7 +6,7 @@
 <title>Bridge — Guppy's Guide</title>
 <meta name="description" content="Move tokens between 42 Chain, QL1, BNB Smart Chain and Ethereum. A Guppy's Guide tool with the same routes as bridge.zaphod.one." />
 <script>(function(){try{var t=localStorage.getItem('guppy-theme');document.documentElement.dataset.theme=(t==='dark'?'dark':'light');}catch(e){document.documentElement.dataset.theme='light';}})();</script>
-<link rel="stylesheet" href="./style.css?v=2" />
+<link rel="stylesheet" href="./style.css?v=3" />
 </head>
 <body>
   <header class="top">
@@ -29,41 +29,70 @@
       <p><a href="https://metamask.io/download/" target="_blank" rel="noreferrer">MetaMask download</a> / <a href="https://foxwallet.com/download" target="_blank" rel="noreferrer">FoxWallet download</a></p>
     </section>
 
-    <section class="card">
+    <section class="card bridge-card">
       <h2>Send tokens to another chain</h2>
-      <div class="grid2">
-        <label class="field"><span>From</span>
-          <select id="fromSel"></select>
-        </label>
-        <label class="field"><span>To</span>
-          <span class="row" style="margin-top:0;">
-            <select id="toSel" style="flex:1;"></select>
-            <button id="flipBtn" type="button" title="Swap direction">⇄</button>
-          </span>
-        </label>
-      </div>
-      <label class="field"><span>Token</span>
-        <select id="tokenSel"></select>
-      </label>
       <p id="routeNote" class="note hidden"></p>
-      <label class="field"><span>Amount</span>
-        <input id="amountInput" class="amount" inputmode="decimal" placeholder="0.0" autocomplete="off" />
-      </label>
-      <div class="chips">
-        <button type="button" class="chip" data-pct="25">25%</button>
-        <button type="button" class="chip" data-pct="50">50%</button>
-        <button type="button" class="chip" data-pct="75">75%</button>
-        <button type="button" class="chip" data-pct="100">MAX</button>
-      </div>
-      <p class="note"><span id="balLine"></span> <span id="nativeLine"></span></p>
-      <label class="field"><span>Recipient address (on the destination chain)</span>
-        <input id="recipientInput" class="amount" placeholder="0x…" autocomplete="off" spellcheck="false" />
-      </label>
-      <p class="note">Defaults to your own address. You can change it — double-check it, tokens sent to a wrong address cannot be recovered.</p>
-    </section>
 
-    <section class="card">
-      <h2>Check before you send</h2>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-label">From</span>
+            <span class="pill">
+              <span class="pill-icon" id="fromChainIcon">42</span>
+              <select id="fromSel" class="pill-select" aria-label="From chain"></select>
+              <span class="pill-chevron" aria-hidden="true">▾</span>
+            </span>
+          </div>
+          <div class="panel-main">
+            <input id="amountInput" class="amount amount-big" inputmode="decimal" placeholder="0.0" autocomplete="off" aria-label="Amount" />
+            <span class="pill">
+              <span class="pill-icon" id="tokenIcon">Q</span>
+              <select id="tokenSel" class="pill-select" aria-label="Token"></select>
+              <span class="pill-chevron" aria-hidden="true">▾</span>
+            </span>
+          </div>
+          <div class="panel-foot">
+            <span class="note bal-note"><span id="balLine"></span> <span id="nativeLine"></span></span>
+            <span class="chips">
+              <button type="button" class="chip" data-pct="25">25%</button>
+              <button type="button" class="chip" data-pct="50">50%</button>
+              <button type="button" class="chip" data-pct="75">75%</button>
+              <button type="button" class="chip" data-pct="100">MAX</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="flip-wrap">
+          <button id="flipBtn" type="button" title="Swap direction" aria-label="Swap direction">⇅</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-label">To</span>
+            <span class="pill">
+              <span class="pill-icon" id="toChainIcon">Q</span>
+              <select id="toSel" class="pill-select" aria-label="To chain"></select>
+              <span class="pill-chevron" aria-hidden="true">▾</span>
+            </span>
+          </div>
+          <div class="panel-main">
+            <span id="qReceivePanel" class="amount-display">—</span>
+            <span class="pill pill-static">
+              <span class="pill-icon" id="tokenIconTo">Q</span>
+              <span id="tokenNameTo" class="pill-name">QOM</span>
+            </span>
+          </div>
+          <p class="note panel-note">Estimated amount you receive on the destination chain.</p>
+        </div>
+      </div>
+
+      <div class="panel panel-recipient">
+        <label class="field-inline" for="recipientInput">Recipient address (on the destination chain)</label>
+        <input id="recipientInput" class="amount" placeholder="0x…" autocomplete="off" spellcheck="false" />
+        <p class="note panel-note">Defaults to your own address. You can change it — double-check it, tokens sent to a wrong address cannot be recovered.</p>
+      </div>
+
+      <h3 class="quote-title">Check before you send</h3>
       <div class="kv"><span>You send</span><b id="qSend">—</b></div>
       <div class="kv"><span>Estimated receive</span><b id="qReceive">—</b></div>
       <div class="kv"><span>Bridge fee</span><b id="qBridgeFee">—</b></div>
@@ -74,8 +103,10 @@
       <div class="kv"><span>Contract used</span><b id="qRouter">—</b></div>
       <div class="kv"><span>Route check</span><b id="qRouteState">—</b></div>
       <p id="validLine" class="status"></p>
-      <div class="row">
-        <button id="sendBtn" class="primary" disabled>Bridge it</button>
+
+      <div class="action-area">
+        <button id="actionConnectBtn" type="button" class="primary big-action hidden">Connect wallet</button>
+        <button id="sendBtn" type="button" class="primary big-action" disabled>Bridge it</button>
         <span id="sendStatus" class="status"></span>
       </div>
       <p class="note">Arrival usually takes a few minutes (one measured delivery took about 5½ minutes). Even if this page is closed, the tokens will still arrive — reopening this page resumes the watch.</p>
@@ -130,12 +161,12 @@
     </p>
   </main>
 
-  <script src="./app.js?v=1"></script>
+  <script src="./app.js?v=2"></script>
 <script>
 (function(){
   var btn=document.getElementById('themeToggle'); if(!btn) return;
   var isJa=(document.documentElement.lang||'').indexOf('ja')===0;
-  function label(){ var d=document.documentElement.dataset.theme==='dark'; btn.textContent=d?(isJa?'\u2600\uFE0F \u767D\u80CC\u666F':'\u2600\uFE0F Light'):(isJa?'\uD83C\uDF19 \u9ED2\u80CC\u666F':'\uD83C\uDF19 Dark'); }
+  function label(){ var d=document.documentElement.dataset.theme==='dark'; btn.textContent=d?(isJa?'☀️ 白背景':'☀️ Light'):(isJa?'🌙 黒背景':'🌙 Dark'); }
   label();
   btn.addEventListener('click',function(){ var next=document.documentElement.dataset.theme==='dark'?'light':'dark'; document.documentElement.dataset.theme=next; try{localStorage.setItem('guppy-theme',next);}catch(e){} label(); });
 })();

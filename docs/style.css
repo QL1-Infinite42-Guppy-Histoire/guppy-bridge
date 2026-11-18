@@ -2,12 +2,14 @@
   --bg: #f7f8fa; --card: #ffffff; --line: #e3e6ec; --text: #14181f;
   --muted: #5c6572; --accent: #2563eb; --accent2: #b8860b; --danger: #c62828;
   --input-bg: #ffffff; --chip: #eef1f5; --success: #1d9e62;
+  --panel: #f5f6f8;
   --card-shadow: 0 1px 3px rgba(16,24,40,.06);
 }
 :root[data-theme="dark"] {
   --bg: #000000; --card: #121316; --line: #26282e; --text: #f2f3f5;
   --muted: #9aa1ab; --accent: #5b8cff; --accent2: #f5c542; --danger: #ff7a7a;
   --input-bg: #0a0a0b; --chip: #1b1d21; --success: #1d9e62;
+  --panel: #17181c;
   --card-shadow: none;
 }
 * { box-sizing: border-box; }
@@ -26,9 +28,10 @@ body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6;
 h1 { margin: 0 0 4px; font-size: 28px; }
 h2 { margin: 0 0 10px; font-size: 18px; }
 .sub { margin: 0; color: var(--muted); font-size: 13px; max-width: 560px; }
-main { max-width: 1120px; margin: 0 auto; padding: 8px 20px 40px; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+main { max-width: 1120px; margin: 0 auto; padding: 8px 20px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  padding: 20px; margin-top: 0; box-shadow: var(--card-shadow); }
+  padding: 20px; margin-top: 0; box-shadow: var(--card-shadow); width: 100%; }
 .warn { border-color: var(--accent2); }
 .hidden { display: none !important; }
 button { background: var(--chip); color: var(--text); border: 1px solid var(--line);
@@ -42,36 +45,86 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 :root[data-theme="light"] .status { color: #8a6d00; }
 .status.err { color: var(--danger); }
 .note { color: var(--muted); font-size: 13px; }
-.foot { margin-top: 2px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
-.field { display: block; margin-top: 10px; }
-.field > span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
-.field select, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--input-bg); color: var(--text); font-size: 16px; min-height: 44px; }
-.field select:focus, select:focus, input.amount:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
+.foot { width: 100%; max-width: 900px; margin-top: 2px; }
+select { background: var(--input-bg); color: var(--text); }
 input.amount { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
   background: var(--input-bg); color: var(--text); font-size: 16px; margin: 0; min-height: 44px; }
-.chips { display: flex; gap: 6px; margin: 8px 0 4px; flex-wrap: wrap; }
-.chips button { padding: 8px 12px; font-size: 13px; min-height: 44px; background: var(--chip); }
+input.amount:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
 .kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); padding: 3px 0; }
 .kv b { color: var(--text); font-weight: 600; text-align: right; }
 a { color: var(--accent); }
+details.card { max-width: 900px; }
 details.card summary { cursor: pointer; font-weight: 600; min-height: 44px; }
-/* PC layout: send form + confirmation side by side; watch/details/foot full width */
-@media (min-width: 1024px) {
-  main { grid-template-columns: 1fr 1fr; }
-  #walletMissing { grid-column: 1 / -1; }
-  #watchPanel { grid-column: 1 / -1; }
-  main > details.card { grid-column: 1 / -1; }
-  main > .foot { grid-column: 1 / -1; }
-}
-@media (min-width: 641px) and (max-width: 1023px) {
-  main { grid-template-columns: 1fr; }
-}
+#walletMissing { max-width: 900px; }
+#watchPanel { max-width: 620px; }
+
+/* ---------- header account (Connect button / connected address) ---------- */
+#accountBox button { border-radius: 999px; padding: 8px 18px; }
+#accountBox .addr { background: var(--chip); border: 1px solid var(--line); border-radius: 999px;
+  padding: 8px 14px; color: var(--text); }
+
+/* ---------- bridge hero card (Uniswap / PancakeSwap style) ---------- */
+.bridge-card { max-width: 620px; border-radius: 24px; padding: 24px; }
+.panels { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 14px 16px; }
+.panel:focus-within { border-color: var(--accent); }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.panel-label { color: var(--muted); font-size: 13px; font-weight: 600; }
+.panel-main { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.panel-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.panel-note { margin: 8px 0 0; }
+.bal-note { min-height: 20px; }
+
+/* icon pill selectors */
+.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; min-height: 40px; flex: none; }
+.pill-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.pill-select { width: auto; border: none; background: transparent; color: var(--text);
+  font-size: 15px; font-weight: 600; padding: 4px 0; min-height: 32px;
+  appearance: none; -webkit-appearance: none; cursor: pointer; }
+.pill-select:focus { outline: none; }
+.pill-chevron { color: var(--muted); font-size: 11px; pointer-events: none; }
+.pill-name { font-size: 15px; font-weight: 600; padding-right: 2px; white-space: nowrap; }
+
+/* big amount input / receive display */
+input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; border: none;
+  font-size: 30px; font-weight: 600; padding: 2px 0; min-height: 48px; }
+.panel input.amount-big:focus { outline: none; border-color: transparent; box-shadow: none; }
+.amount-display { flex: 1; min-width: 0; font-size: 30px; font-weight: 600; color: var(--text);
+  padding: 2px 0; min-height: 48px; display: flex; align-items: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* flip button in the seam between the panels */
+.flip-wrap { display: flex; justify-content: center; margin: -15px 0; position: relative; z-index: 2; }
+#flipBtn { width: 44px; height: 44px; min-height: 44px; border-radius: 14px; padding: 0;
+  background: var(--accent); border: 4px solid var(--card); color: #fff; font-size: 18px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(16,24,40,.18); }
+
+/* balance % chips */
+.chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.chips button { padding: 8px 12px; font-size: 13px; min-height: 44px; background: var(--chip); border-radius: 999px; }
+
+/* recipient panel */
+.panel-recipient { margin-top: 12px; }
+.field-inline { display: block; color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.panel-recipient input.amount { background: transparent; border: none; font-size: 14px;
+  padding: 2px 0; min-height: 36px; border-radius: 0; }
+.panel-recipient input.amount:focus { outline: none; border-color: transparent; box-shadow: none; }
+
+/* quote block + single big action button */
+.quote-title { font-size: 15px; margin: 22px 0 6px; }
+.action-area { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.big-action { width: 100%; min-height: 56px; font-size: 17px; font-weight: 700;
+  border-radius: 16px; padding: 14px 20px; }
+.action-area .status { text-align: center; }
+
 @media (max-width: 640px) {
   .top, main { padding-left: 16px; padding-right: 16px; }
   .card { padding: 16px; }
+  .bridge-card { padding: 18px 16px; }
   h1 { font-size: 24px; }
   .top-right { align-items: flex-start; }
+  input.amount-big, .amount-display { font-size: 26px; }
 }

@@ -47,6 +47,18 @@ const state = {
 function shortAddr(a) {
   return a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
 }
+/* Presentation only: keep the icon-pill avatars (chain / token initials)
+   in sync with the current selection. No effect on quoting or sending. */
+const CHAIN_ICON = { infinite: "42", ql1: "Q", bsc: "B", ethereum: "Ξ" };
+function syncPillIcons() {
+  const tk = currentToken();
+  const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+  set("fromChainIcon", CHAIN_ICON[state.fromKey] || "?");
+  set("toChainIcon", CHAIN_ICON[state.toKey] || "?");
+  set("tokenIcon", tk ? tk.key.slice(0, 1) : "?");
+  set("tokenIconTo", tk ? tk.key.slice(0, 1) : "?");
+  set("tokenNameTo", tk ? tk.key : "");
+}
 function setStatus(msg, isErr) {
   const el = $("sendStatus");
   el.textContent = msg || "";
@@ -100,6 +112,7 @@ function fillTokenOptions() {
   if (!route || !tokenFor(route, state.tokenKey)) state.tokenKey = route?.tokens[0]?.key;
   sel.value = state.tokenKey;
   updateRouteNote();
+  syncPillIcons();
 }
 function updateRouteNote() {
   const route = currentRoute();
@@ -129,19 +142,32 @@ function hasWallet() { return typeof window !== "undefined" && !!window.ethereum
 function renderAccount() {
   const box = $("accountBox");
   box.innerHTML = "";
-  if (!hasWallet()) { $("walletMissing").classList.remove("hidden"); return; }
+  // Presentation only: the action area shows ONE big button — the
+  // full-width Connect button while disconnected, the Bridge button
+  // once connected (PancakeSwap style). Both call the existing flows.
+  const ac = $("actionConnectBtn"), sb = $("sendBtn");
+  if (!hasWallet()) {
+    $("walletMissing").classList.remove("hidden");
+    if (ac) ac.classList.add("hidden");
+    if (sb) sb.classList.add("hidden");
+    return;
+  }
   $("walletMissing").classList.add("hidden");
   if (state.account) {
     const s = document.createElement("span");
     s.className = "addr";
     s.textContent = t("connectedAs") + shortAddr(state.account);
     box.appendChild(s);
+    if (ac) ac.classList.add("hidden");
+    if (sb) sb.classList.remove("hidden");
   } else {
     const b = document.createElement("button");
     b.className = "primary";
     b.textContent = t("connectBtn");
     b.onclick = connect;
     box.appendChild(b);
+    if (ac) ac.classList.remove("hidden");
+    if (sb) sb.classList.add("hidden");
   }
 }
 async function connect() {
@@ -298,6 +324,9 @@ function renderQuote(route, tk, amount, amountErr, check) {
   $("validLine").className = "status" + ((nativeWarn || problem) ? " err" : "");
   const canSend = !!state.account && !state.sending && !dis && !problem && amount != null && amount > 0n && !nativeWarn;
   sendBtn.disabled = !canSend;
+  // Presentation only: mirror the receive estimate into the To panel.
+  const rp = $("qReceivePanel");
+  if (rp) rp.textContent = $("qReceive").textContent;
 }
 
 /* ---------- send ---------- */
@@ -466,6 +495,7 @@ function init() {
   });
   $("tokenSel").addEventListener("change", () => {
     state.tokenKey = $("tokenSel").value;
+    syncPillIcons();
     refreshQuote();
   });
   let deb = null;
@@ -490,6 +520,8 @@ function init() {
     });
   });
   $("sendBtn").addEventListener("click", doSend);
+  const acb = $("actionConnectBtn");
+  if (acb) acb.addEventListener("click", connect);
   $("watchClear").addEventListener("click", () => {
     try { localStorage.removeItem(WATCH_KEY); } catch (e) { /* ignore */ }
     state.watch = null;
