@@ -149,11 +149,60 @@ input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; 
   border-radius: 16px; padding: 14px 20px; }
 .action-area .status { text-align: center; }
 
+/* ================= responsive =================
+   Phone <=640px: single column, hero card spans the content width,
+   full-width action buttons, >=44px tap targets, >=16px inputs.
+   Tablet 641-1023px: hero card capped and centered, mid-size measure
+   for the text sections, header intact.
+   Desktop >=1024px: container stays 1120px; the hero card is centered
+   at a fixed comfortable width (never stretched), typography/spacing
+   step up, watch + wallet-warning align with the card's column, and
+   Details / footer take a wider but still centered measure below. */
+
+/* ---------- smartphone ---------- */
 @media (max-width: 640px) {
   .top, main { padding-left: 16px; padding-right: 16px; }
   .card { padding: 16px; }
-  .bridge-card { padding: 18px 16px; }
+  .bridge-card { padding: 18px 16px; width: 100%; }
   h1 { font-size: 24px; }
-  .top-right { align-items: flex-start; }
+  /* header controls get their own full row under the brand block */
+  .top-right { align-items: flex-start; width: 100%; }
+  .top-actions { justify-content: flex-start; }
+  /* long chain names must never push a panel wide */
+  .pill { min-width: 0; }
+  .pill-select { min-width: 0; }
   input.amount-big, .amount-display { font-size: 26px; }
+}
+
+/* ---------- tablet / intermediate ---------- */
+@media (min-width: 641px) and (max-width: 1023px) {
+  main { padding: 12px 20px 48px; gap: 18px; }
+  h1 { font-size: 26px; }
+  .bridge-card { max-width: 620px; padding: 24px; }
+  #watchPanel { max-width: 620px; }
+  /* text sections take a mid measure instead of near-full width */
+  #walletMissing, details.card, .foot { max-width: 720px; }
+}
+
+/* ---------- desktop ---------- */
+@media (min-width: 1024px) {
+  body { font-size: 17px; }
+  .top { padding: 24px 24px 8px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 20px; }
+  .sub { font-size: 14px; max-width: 640px; }
+  main { padding: 16px 24px 56px; gap: 20px; }
+  /* hero card: centered, fixed comfortable width — not stretched */
+  .bridge-card { max-width: 640px; padding: 28px; border-radius: 28px; }
+  .panel { padding: 18px 20px; border-radius: 22px; }
+  .panel-label { font-size: 14px; }
+  input.amount-big, .amount-display { font-size: 34px; }
+  .quote-title { font-size: 17px; }
+  .kv { font-size: 14px; }
+  .big-action { min-height: 60px; font-size: 18px; }
+  /* secondary content: same centered column as the hero card */
+  #watchPanel { max-width: 640px; }
+  #walletMissing { max-width: 640px; }
+  /* wider reading measure for the fine print, still centered */
+  details.card, .foot { max-width: 880px; }
 }
