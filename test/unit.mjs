@@ -12,6 +12,21 @@ assert.equal(parseAmount("100", 6), 100000000n);
 assert.equal(parseAmount("0.0008", 8), 80000n);
 assert.throws(() => parseAmount("1.1234567", 6), /decimals/);
 assert.throws(() => parseAmount("abc", 18), /format/);
+// audit 2026-11-24: hostile / sloppy amount inputs must never parse
+assert.throws(() => parseAmount("1e5", 18), /format/); // exponent notation
+assert.throws(() => parseAmount("1,000", 18), /format/); // comma separator
+assert.throws(() => parseAmount("１２３", 18), /format/); // full-width digits
+assert.throws(() => parseAmount("-5", 18), /format/); // negative
+assert.throws(() => parseAmount("1 0", 18), /format/); // inner space
+assert.throws(() => parseAmount(".", 18), /format/);
+assert.equal(parseAmount(" 1.5 ", 18), 1500000000000000000n); // outer spaces trimmed
+assert.equal(parseAmount(".5", 18), 500000000000000000n);
+assert.equal(parseAmount("1.", 18), 1000000000000000000n);
+assert.equal(parseAmount("0", 18), 0n); // parses; >0 enforced by UI/send path
+assert.equal(parseAmount("9".repeat(40), 18), BigInt("9".repeat(40)) * 10n ** 18n); // no overflow
+// the zero address is a syntactically valid address — it is blocked
+// separately in the UI/send path (errRecipientZero), not here
+assert.ok(isAddress("0x0000000000000000000000000000000000000000"));
 assert.equal(formatAmount(1500000000000000000n, 18), "1.5");
 assert.equal(formatAmount(98000000n, 6), "98");
 assert.equal(percentOf(1000n, 25), 250n);

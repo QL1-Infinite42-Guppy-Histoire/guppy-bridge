@@ -230,10 +230,23 @@ async function refreshQuote() {
   updateRouteNote();
   // balances
   if (state.account) {
+    let tb = null, nb = null;
     try {
-      state.tokenBal = await readTokenBalance(state.fromKey, tk.src.erc20, state.account);
-      state.nativeBal = await readNativeBalance(state.fromKey, state.account);
-    } catch (e) { state.tokenBal = null; state.nativeBal = null; }
+      tb = await readTokenBalance(state.fromKey, tk.src.erc20, state.account);
+      nb = await readNativeBalance(state.fromKey, state.account);
+    } catch (e) { /* both stay null = unknown */ }
+    // Race guard (audit 2026-11-24): if the user switched chain/token
+    // while these reads were in flight, a newer refresh owns the UI and
+    // the shared balance state — this stale pass must not overwrite the
+    // balance line, the amount panel, or state.tokenBal/nativeBal.
+    if (seq !== quoteSeq) return;
+    state.tokenBal = tb;
+    state.nativeBal = nb;
+  } else {
+    // Disconnected: never leave a previous account's balances on screen
+    // or in the shared state the % chips and checks read (audit 2026-11-24).
+    state.tokenBal = null;
+    state.nativeBal = null;
   }
   $("balLine").textContent = state.tokenBal != null
     ? t("balance") + formatAmount(state.tokenBal, tk.src.decimals) + " " + tk.key : "";
@@ -272,6 +285,12 @@ function renderQuote(route, tk, amount, amountErr, check) {
     if (check.paused === true) problem = problem || t("routePaused");
     else if (check.paused === null || check.allowed !== true) problem = problem || t("routeNotAllowed");
     else if (!check.quoteNative) problem = problem || t("routeQuoteFailed");
+    // The router's token() was already read by the live check — enforce it
+    // against the mirrored config (audit 2026-11-24): if the router ever
+    // pointed at a different token than the one this site would approve,
+    // sending must stop, not just display.
+    if (check.token && check.token.toLowerCase() !== tk.src.erc20.toLowerCase())
+      problem = problem || t("routeQuoteFailed");
     if (check.quoteNative) {
       $("qNativeFee").textContent =
         formatAmount(check.quoteNative.totalNative, 18) + " " + CHAINS[state.fromKey].native.symbol +
@@ -299,7 +318,12 @@ function renderQuote(route, tk, amount, amountErr, check) {
     $("qMax").textContent = "—";
     $("qNativeFee").textContent = "0 " + CHAINS[state.fromKey].native.symbol;
     $("qBridgeFee").textContent = "0 " + tk.key;
-    $("qReceive").textContent = amount != null ? formatAmount(amount, tk.dst.decimals) + " " + tk.key : "—";
+    // Use the fee module's decimal-scaled receive figure (audit
+    // 2026-11-24): formatting the source-scale amount with the
+    // destination's decimals is only correct when both sides share
+    // decimals.
+    $("qReceive").textContent = amount != null && check.receiveRaw != null
+      ? formatAmount(check.receiveRaw, tk.dst.decimals) + " " + tk.key : "—";
     if (!(check.codeBytes > 0) || !check.mailbox ||
         check.mailbox.toLowerCase() !== CHAINS.ql1.mailbox.toLowerCase())
       problem = problem || t("routeQuoteFailed");
@@ -307,6 +331,10 @@ function renderQuote(route, tk, amount, amountErr, check) {
     problem = problem || t("routeQuoteFailed");
     $("qNativeFee").textContent = "—"; $("qBridgeFee").textContent = "—"; $("qReceive").textContent = "—";
   }
+  // Zero-address recipient (audit 2026-11-24): tokens delivered to
+  // 0x000…0 are irrecoverable — block it like any other invalid input.
+  const recipientVal = $("recipientInput").value.trim();
+  if (/^0x0{40}$/.test(recipientVal)) problem = problem || t("errRecipientZero");
   if (amount != null && state.tokenBal != null && amount > state.tokenBal)
     problem = problem || t("errOverBalance");
   if (amount != null && amount === 0n) problem = problem || t("errAmountPositive");
@@ -335,22 +363,48 @@ async function doSend() {
   if (!route || !tk || !state.account || state.sending) return;
   const recipient = $("recipientInput").value.trim();
   if (!isAddress(recipient)) { setStatus(t("errRecipient"), true); return; }
+  if (/^0x0{40}$/.test(recipient)) { setStatus(t("errRecipientZero"), true); return; }
   let amount;
   try { amount = parseAmount($("amountInput").value, tk.src.decimals); }
   catch (e) { setStatus(t("errAmountFormat"), true); return; }
+  if (amount <= 0n) { setStatus(t("errAmountPositive"), true); return; }
   state.sending = true;
   $("sendBtn").disabled = true;
   try {
     await ensureChain(state.fromKey);
-    // fresh re-quote at send time (never reuse a stale messaging fee)
+    // Fresh re-quote at send time (never reuse a stale messaging fee),
+    // re-validating everything the confirmation panel enforced — the
+    // button state can lag the inputs by one debounce, so the send path
+    // must not trust it (audit 2026-11-24). Send construction itself
+    // (target, calldata, value) is unchanged.
     let totalNative = 0n;
     if (tk.src.bridgeRouter) {
       const fresh = await getLiveQuote(route, tk, amount);
-      if (!fresh.quoteNative || fresh.paused || fresh.allowed !== true)
+      if (!fresh.quoteNative || !fresh.quoteBridge || fresh.paused || fresh.allowed !== true)
+        throw new Error(t("routeQuoteFailed"));
+      if (fresh.token && fresh.token.toLowerCase() !== tk.src.erc20.toLowerCase())
         throw new Error(t("routeQuoteFailed"));
       if (fresh.min != null && amount < fresh.min)
         throw new Error(t("errBelowMin", formatAmount(fresh.min, tk.src.decimals), tk.key));
+      if (fresh.max != null && fresh.max < (1n << 200n) && amount > fresh.max)
+        throw new Error(t("errAboveMax"));
       totalNative = fresh.quoteNative.totalNative;
+    } else {
+      // QL1 warp route: re-run the structural check at send time too.
+      const fresh = await getLiveQuote(route, tk, amount);
+      if (!(fresh.codeBytes > 0) || !fresh.mailbox ||
+          fresh.mailbox.toLowerCase() !== CHAINS.ql1.mailbox.toLowerCase())
+        throw new Error(t("routeQuoteFailed"));
+    }
+    // Balance re-check (best effort: a failed read does not block — the
+    // contract still enforces — but a read that succeeds and shows the
+    // amount exceeds the balance stops the send before any approval).
+    try {
+      const balNow = await readTokenBalance(state.fromKey, tk.src.erc20, state.account);
+      if (balNow != null && amount > balNow) throw new Error(t("errOverBalance"));
+    } catch (e) {
+      if (e && e.message === t("errOverBalance")) throw e;
+      /* read failure: proceed, on-chain enforcement still applies */
     }
     // recipient destination balance before the send (secondary arrival signal)
     let dstBalBefore = null;
@@ -359,6 +413,7 @@ async function doSend() {
     const target = currentTarget(tk);
     // approve only if allowance is not enough; exact amount
     const allowance = await readAllowance(state.fromKey, tk.src.erc20, state.account, target);
+    if (allowance === null) throw new Error(t("routeQuoteFailed"));
     if (allowance < amount) {
       setStatus(t("approveStep"));
       const ah = await walletSend({
@@ -384,13 +439,18 @@ async function doSend() {
       routeType: tk.src.bridgeRouter ? "standard-bridgerouter" : "standard-ql1-warp",
       fromKey: state.fromKey, toKey: state.toKey, tokenKey: state.tokenKey,
       amountRaw: amount.toString(), recipient,
+      srcDecimals: tk.src.decimals,
       dstErc20: tk.dst.erc20, dstDecimals: tk.dst.decimals,
       dstBalBefore: dstBalBefore != null ? dstBalBefore.toString() : null,
       startedAt: Date.now(), delivered: false,
     };
     saveWatch(watch);
     startWatch(watch);
-    setStatus(t("sentOk"));
+    // If the receipt never came back within the wait window, do not
+    // claim a confirmed send (audit 2026-11-24): the transfer may well
+    // have landed, so the watch still starts — but the status says the
+    // confirmation itself could not be read.
+    setStatus(rc ? t("sentOk") : t("confirmTimeout"));
   } catch (e) {
     const msg = (e && (e.code === 4001 || /rejected|denied/i.test(e.message || "")))
       ? t("errCancelled") : t("errFailed") + ((e && e.message) || e);
@@ -410,7 +470,21 @@ function saveWatch(w) {
 function loadWatch() {
   try {
     const w = JSON.parse(localStorage.getItem(WATCH_KEY) || "null");
-    return w && w.txHash ? w : null;
+    // Shape-validate the persisted watch (audit 2026-11-24): the panel is
+    // rendered from this data on every page load, so a malformed or
+    // tampered entry must be dropped, never rendered or parsed loosely.
+    if (!w || typeof w !== "object") return null;
+    if (!/^0x[0-9a-fA-F]{64}$/.test(w.txHash || "")) return null;
+    if (!(w.fromKey in CHAINS) || !(w.toKey in CHAINS)) return null;
+    if (typeof w.tokenKey !== "string" || w.tokenKey.length > 12) return null;
+    if (!/^\d+$/.test(w.amountRaw || "")) return null;
+    if (!isAddress(w.recipient || "") || !isAddress(w.dstErc20 || "")) return null;
+    const decOk = (d) => Number.isInteger(d) && d >= 0 && d <= 36;
+    if (!decOk(w.dstDecimals)) return null;
+    if (w.srcDecimals != null && !decOk(w.srcDecimals)) return null;
+    if (!Number.isFinite(w.startedAt) || w.startedAt <= 0) return null;
+    if (w.messageId != null && !/^0x[0-9a-fA-F]{64}$/.test(w.messageId)) return null;
+    return w;
   } catch (e) { return null; }
 }
 function fmtElapsed(ms) {
@@ -420,16 +494,54 @@ function fmtElapsed(ms) {
 function renderWatch(w, delivered, dstBal) {
   const panel = $("watchPanel");
   panel.classList.remove("hidden");
-  const lines = [];
-  lines.push(`<div class="kv"><span>${t("watchTx")}</span><b><a href="${explorerTx(w.fromKey, w.txHash)}" target="_blank" rel="noreferrer">${w.txHash.slice(0, 10)}…</a></b></div>`);
-  if (w.messageId) lines.push(`<div class="kv"><span>${t("watchMsg")}</span><b class="addr">${w.messageId.slice(0, 18)}…</b></div>`);
-  lines.push(`<div class="kv"><span>${w.tokenKey} ${DISPLAY[w.fromKey]} → ${DISPLAY[w.toKey]}</span><b>${formatAmount(BigInt(w.amountRaw), w.dstDecimals)} ${w.tokenKey}</b></div>`);
+  // Built with DOM APIs + textContent only (audit 2026-11-24): the watch
+  // data round-trips through localStorage, so it is never interpolated
+  // into innerHTML. The amount sent is formatted with the SOURCE token's
+  // decimals (amountRaw is source-scale); older watches saved before
+  // srcDecimals existed fall back to dstDecimals, as they did before.
+  const body = $("watchBody");
+  body.innerHTML = "";
+  const kv = (label, valueNode) => {
+    const row = document.createElement("div");
+    row.className = "kv";
+    const s = document.createElement("span");
+    s.textContent = label;
+    const b = document.createElement("b");
+    if (typeof valueNode === "string") b.textContent = valueNode;
+    else b.appendChild(valueNode);
+    row.appendChild(s);
+    row.appendChild(b);
+    body.appendChild(row);
+    return b;
+  };
+  const txLink = document.createElement("a");
+  txLink.href = explorerTx(w.fromKey, w.txHash);
+  txLink.target = "_blank";
+  txLink.rel = "noreferrer";
+  txLink.textContent = w.txHash.slice(0, 10) + "…";
+  kv(t("watchTx"), txLink);
+  if (w.messageId) {
+    const mb = kv(t("watchMsg"), w.messageId.slice(0, 18) + "…");
+    mb.className = "addr";
+  }
+  kv(
+    `${w.tokenKey} ${DISPLAY[w.fromKey]} → ${DISPLAY[w.toKey]}`,
+    `${formatAmount(BigInt(w.amountRaw), w.srcDecimals != null ? w.srcDecimals : w.dstDecimals)} ${w.tokenKey}`
+  );
   if (dstBal != null)
-    lines.push(`<div class="kv"><span>${t("watchBalance")}</span><b>${formatAmount(dstBal, w.dstDecimals)} ${w.tokenKey}</b></div>`);
-  lines.push(delivered
-    ? `<p class="status">${t("watchDelivered")}</p>`
-    : `<p class="status">${t("watchWaiting")}<span class="watchElapsed">${fmtElapsed(Date.now() - w.startedAt)}</span></p>`);
-  $("watchBody").innerHTML = lines.join("");
+    kv(t("watchBalance"), `${formatAmount(dstBal, w.dstDecimals)} ${w.tokenKey}`);
+  const p = document.createElement("p");
+  p.className = "status";
+  if (delivered) {
+    p.textContent = t("watchDelivered");
+  } else {
+    p.textContent = t("watchWaiting");
+    const el = document.createElement("span");
+    el.className = "watchElapsed";
+    el.textContent = fmtElapsed(Date.now() - w.startedAt);
+    p.appendChild(el);
+  }
+  body.appendChild(p);
 }
 function startWatch(w) {
   saveWatch(w);

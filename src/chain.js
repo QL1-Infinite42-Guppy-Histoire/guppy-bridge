@@ -132,11 +132,17 @@ export async function rpcCall(chainKey, method, params) {
   let lastErr = null;
   for (let i = 0; i < urls.length; i++) {
     const url = urls[(rpcIdx[chainKey] || 0) % urls.length];
+    // Per-attempt timeout (audit 2026-11-24): a hung endpoint must not
+    // stall a quote or the arrival watch forever — fail over to the next
+    // endpoint (or surface the failure) instead.
+    const ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), 15000) : null;
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: ctl ? ctl.signal : undefined,
       });
       const j = await res.json();
       if (j.error) throw new Error(j.error.message || "rpc error");
@@ -145,6 +151,8 @@ export async function rpcCall(chainKey, method, params) {
     } catch (e) {
       lastErr = e;
       rpcIdx[chainKey] = ((rpcIdx[chainKey] || 0) + 1) % urls.length;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
   throw lastErr || new Error("rpc failed");
@@ -175,7 +183,10 @@ export function words(hex) {
 // ---- contract reads -----------------------------------------------------------
 export async function readTokenBalance(chainKey, tokenAddr, account) {
   const hex = await ethCall(chainKey, tokenAddr, SEL.balanceOf + encAddr(account));
-  return decUint(hex) ?? 0n;
+  // null (not 0) on an empty/malformed response: a failed read must never
+  // be rendered as a zero balance (audit 2026-11-24). Callers treat null
+  // as "unknown".
+  return decUint(hex);
 }
 export async function readNativeBalance(chainKey, account) {
   const hex = await rpcCall(chainKey, "eth_getBalance", [account, "latest"]);
@@ -185,7 +196,9 @@ export async function readAllowance(chainKey, tokenAddr, owner, spender) {
   const hex = await ethCall(
     chainKey, tokenAddr, SEL.allowance + encAddr(owner) + encAddr(spender)
   );
-  return decUint(hex) ?? 0n;
+  // null on empty/malformed response (see readTokenBalance) — the send
+  // path must fail closed rather than assume an allowance of 0.
+  return decUint(hex);
 }
 // Full live check + quote for a BridgeRouter route. Returns null fields on
 // failure rather than throwing for each individual call, so the UI can say
