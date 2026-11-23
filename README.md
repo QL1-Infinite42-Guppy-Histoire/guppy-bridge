@@ -195,6 +195,21 @@ PC（1024px〜）のレイアウトを広げました（CSS のみ）。これ�
   表示せず、未確認であることを正直に表示。
 - esbuild を 0.25.12 に更新（開発時のみの脆弱性 GHSA-67mh-4wv8-2f99 対策）。
 
+## 見積もり変化チェック（v0.8.2、2026-11-24）
+監査の判断事項1件（ユーザー承認済み）の実装です。BridgeRouter ルートでは、
+送信直前の再見積もりで得た「受け取る量」が、画面で確認した見積もりの
+「受け取る量」と 1 単位でも違ったら、承認・署名の前に送信を中止し、
+新しい見積もりを表示して「確認してもう一度押してください」と伝えます。
+これらのルートは固定手数料（定額または 0）なので、同じ金額に対する
+受け取り量はルーターの手数料設定だけで決まります。差が出るのは設定が
+変わったときだけであり、誤検出の余地がないため、許容幅なしの完全一致で
+比較します。画面の見積もりが今の金額・ルートに対するものではない場合
+（見積もり表示後に入力を変えた等）も、古い表示のまま送らず、見積もりを
+更新して再押下を求めます。QL1 ワープルートには quoteBridge がなく、
+受け取り量は送信量の 1:1 換算（手数料 0）で変化のしようがないため、
+このチェックの対象外です（送信直前の構造確認は従来どおり実施）。
+送信の組み立て自体（送信先・コールデータ・付随させる値）は無変更です。
+
 ## 開発
 ```sh
 npm install
@@ -225,7 +240,15 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   recipient balance) that persists in localStorage and resumes after reload.
 - **Send mechanics**: BridgeRouter chains approve the token to the BridgeRouter
   and call `transferRemote` with `value = quoteNative(dst, "0x").totalNative`
-  re-quoted at send time. QL1 has no BridgeRouter: approve to the Hyperlane warp
+  re-quoted at send time. Since v0.8.2 the send also passes a quote-drift gate:
+  if the fresh send-time receive amount differs at all from the figure the user
+  reviewed on screen (fixed-fee routes, so any difference means the router's
+  fee parameters changed), the send aborts before approval/signing, shows the
+  new quote, and asks the user to press send again; the same happens when no
+  reviewed quote covers the exact current route/token/amount. QL1 warp routes
+  have no `quoteBridge` (receive is the sent amount scaled 1:1, fee 0 — nothing
+  can drift) and are covered by their send-time structural re-check instead.
+  QL1 has no BridgeRouter: approve to the Hyperlane warp
   router and call `transferRemote` with value 0 (verified on sampled real sends).
   Exception: BSC/Ethereum as the SOURCE (toward 42 Chain) — their routers are
   older versions (1.1.0 / 1.2.0) whose `quoteNative` reverts, so, exactly like

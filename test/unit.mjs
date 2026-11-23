@@ -91,4 +91,34 @@ const { ROUTES } = await import("../src/chain.js");
 assert.equal(ROUTES.length, 6);
 assert.equal(ROUTES.reduce((s, r) => s + r.tokens.length, 0), 26);
 
+// send-time quote-drift gate (user-approved 2026-11-24): the fresh
+// send-time receive must EXACTLY equal the reviewed receive for the same
+// route/token/amount, or the send aborts before approval/signing.
+const { driftGate } = await import("../src/fees.js");
+const ctx = { fromKey: "infinite", toKey: "bsc", tokenKey: "USDT", amountRaw: "100000000" };
+const reviewed = { ...ctx, receiveRaw: 98000000n }; // 100 USDT - flat 2.0 fee, 6-dec scale
+// equal -> proceed
+assert.deepEqual(driftGate(reviewed, ctx, 98000000n), { action: "proceed" });
+// changed receive (fee parameters moved) -> abort, carrying was/now
+assert.deepEqual(driftGate(reviewed, ctx, 97000000n),
+  { action: "changed", was: 98000000n, now: 97000000n });
+// even a 1-unit difference aborts: exact equality, no tolerance
+assert.equal(driftGate(reviewed, ctx, 98000001n).action, "changed");
+// no reviewed quote at all -> review (refresh + press send again)
+assert.deepEqual(driftGate(null, ctx, 98000000n), { action: "review" });
+// reviewed quote was for a different amount (user edited after the quote)
+assert.equal(driftGate(reviewed, { ...ctx, amountRaw: "50000000" }, 98000000n).action, "review");
+// different token / route -> review
+assert.equal(driftGate(reviewed, { ...ctx, tokenKey: "USDC" }, 98000000n).action, "review");
+assert.equal(driftGate(reviewed, { ...ctx, toKey: "ethereum" }, 98000000n).action, "review");
+assert.equal(driftGate(reviewed, { ...ctx, fromKey: "bsc" }, 98000000n).action, "review");
+// reviewed quote had no receive figure (quoteBridge unavailable then)
+assert.equal(driftGate({ ...ctx, receiveRaw: null }, ctx, 98000000n).action, "review");
+// reviewed quote had no amount (empty/invalid input at quote time)
+assert.equal(driftGate({ ...ctx, amountRaw: null, receiveRaw: null }, ctx, 98000000n).action, "review");
+// zero-fee route: receive == amount scaled; equality still exact
+const qomCtx = { fromKey: "infinite", toKey: "ql1", tokenKey: "QOM", amountRaw: "1000000000000000000" };
+assert.deepEqual(driftGate({ ...qomCtx, receiveRaw: 1000000000000000000n }, qomCtx, 1000000000000000000n),
+  { action: "proceed" });
+
 console.log("unit tests OK");

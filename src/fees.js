@@ -56,3 +56,49 @@ export async function getLiveQuote(route, tokenEntry, amountRaw) {
       : null,
   };
 }
+
+// ---- send-time quote-drift gate (user-approved 2026-11-24) -------------------
+// The confirmation panel shows a receive figure from the displayed quote.
+// Before any approval or signing, doSend re-quotes and this gate decides
+// whether the send may proceed against what the user actually reviewed.
+//
+// Comparison semantics: EXACT BigInt equality on the raw receive amount
+// (destination scale), no tolerance. That is safe here because these are
+// fixed-fee routes: quoteBridge(amount).forward is a pure function of the
+// amount and the router's fee parameters (feeFlat), and both the displayed
+// quote and the send-time quote call it with the SAME parsed amount (the
+// context match below enforces that). So a difference can only mean the
+// router's fee parameters changed after the user reviewed the quote —
+// there is no legitimate drift to tolerate.
+//
+// `reviewed` is the snapshot taken when the displayed quote was committed:
+//   { fromKey, toKey, tokenKey, amountRaw (string|null), receiveRaw (BigInt|null) }
+// `current` is the send's own context: { fromKey, toKey, tokenKey, amountRaw (string) }.
+// The recipient is deliberately NOT part of the context: the receive amount
+// does not depend on it (flat/zero fee), and doSend re-reads and validates
+// the recipient itself at send time.
+//
+// Returns one of:
+//   { action: "proceed" }                          — reviewed figure still exact
+//   { action: "changed", was, now }                — fee parameters moved; abort
+//   { action: "review" }                           — no reviewed quote covers
+//     exactly this send (inputs changed after the last displayed quote, or
+//     its receive figure could not be read): the caller refreshes the panel
+//     and asks the user to press send again — never send against a stale
+//     or unread display.
+// The caller guarantees freshReceiveRaw is a BigInt (doSend has already
+// required a successful quoteBridge before reaching the gate).
+export function driftGate(reviewed, current, freshReceiveRaw) {
+  if (!reviewed ||
+      reviewed.fromKey !== current.fromKey ||
+      reviewed.toKey !== current.toKey ||
+      reviewed.tokenKey !== current.tokenKey ||
+      reviewed.amountRaw !== current.amountRaw ||
+      reviewed.receiveRaw == null) {
+    return { action: "review" };
+  }
+  if (freshReceiveRaw !== reviewed.receiveRaw) {
+    return { action: "changed", was: reviewed.receiveRaw, now: freshReceiveRaw };
+  }
+  return { action: "proceed" };
+}

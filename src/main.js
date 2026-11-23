@@ -19,7 +19,7 @@ import {
   fetchDelivered, extractMessageId,
   explorerTx, rpcCall,
 } from "./chain.js";
-import { getLiveQuote } from "./fees.js";
+import { getLiveQuote, driftGate } from "./fees.js";
 import { t, LANG } from "./i18n.js";
 
 const DISPLAY = {
@@ -38,6 +38,7 @@ const state = {
   nativeBal: null,
   check: null, // last live check result
   quoteFor: null, // amount string the quote belongs to
+  quoteCtx: null, // snapshot of what the displayed quote covers (drift gate)
   sending: false,
   watch: null,
   watchTimer: null,
@@ -271,6 +272,17 @@ async function refreshQuote() {
   if (seq !== quoteSeq) return;
   state.check = check;
   state.quoteFor = rawText;
+  // Snapshot of exactly what this displayed quote covers, for the
+  // send-time drift gate (2026-11-24): doSend compares its fresh quote
+  // against this snapshot and only trusts the on-screen receive figure
+  // when the snapshot is for the SAME route/token/amount. receiveRaw is
+  // the destination-scale figure the panel shows (BridgeRouter routes;
+  // null when no quoteBridge answer was available for this amount).
+  state.quoteCtx = {
+    fromKey: state.fromKey, toKey: state.toKey, tokenKey: state.tokenKey,
+    amountRaw: amount != null ? amount.toString() : null,
+    receiveRaw: check && check.kind === "bridgeRouter" ? check.receiveRaw : null,
+  };
   renderQuote(route, tk, amount, amountErr, check);
 }
 function renderQuote(route, tk, amount, amountErr, check) {
@@ -358,6 +370,13 @@ function renderQuote(route, tk, amount, amountErr, check) {
 }
 
 /* ---------- send ---------- */
+// Drift-gate aborts carry their own complete user-facing message; the
+// catch block shows them verbatim instead of prefixing "Failed:".
+function quoteGateError(msg) {
+  const e = new Error(msg);
+  e.quoteGate = true;
+  return e;
+}
 async function doSend() {
   const route = currentRoute(), tk = currentToken();
   if (!route || !tk || !state.account || state.sending) return;
@@ -389,6 +408,25 @@ async function doSend() {
       if (fresh.max != null && fresh.max < (1n << 200n) && amount > fresh.max)
         throw new Error(t("errAboveMax"));
       totalNative = fresh.quoteNative.totalNative;
+      // Quote-drift gate (user-approved 2026-11-24): the receive figure
+      // the user reviewed on screen must still be EXACTLY what this fresh
+      // quote returns (fixed-fee routes — any difference means the
+      // router's fee parameters changed after the review; see fees.js).
+      // Aborts here, before any approval or signing; the finally block
+      // re-runs refreshQuote so the panel then shows the new figures.
+      // QL1 warp routes have no quoteBridge and nothing to drift
+      // (receive = sent amount scaled 1:1, fee 0) — their structural
+      // re-check below is their gate.
+      const gate = driftGate(state.quoteCtx, {
+        fromKey: state.fromKey, toKey: state.toKey,
+        tokenKey: state.tokenKey, amountRaw: amount.toString(),
+      }, fresh.receiveRaw);
+      if (gate.action === "review") throw quoteGateError(t("errQuoteReview"));
+      if (gate.action === "changed") {
+        throw quoteGateError(t("errQuoteChanged",
+          formatAmount(gate.now, tk.dst.decimals) + " " + tk.key,
+          formatAmount(gate.was, tk.dst.decimals) + " " + tk.key));
+      }
     } else {
       // QL1 warp route: re-run the structural check at send time too.
       const fresh = await getLiveQuote(route, tk, amount);
@@ -452,8 +490,9 @@ async function doSend() {
     // confirmation itself could not be read.
     setStatus(rc ? t("sentOk") : t("confirmTimeout"));
   } catch (e) {
-    const msg = (e && (e.code === 4001 || /rejected|denied/i.test(e.message || "")))
-      ? t("errCancelled") : t("errFailed") + ((e && e.message) || e);
+    const msg = (e && e.quoteGate) ? e.message
+      : (e && (e.code === 4001 || /rejected|denied/i.test(e.message || "")))
+        ? t("errCancelled") : t("errFailed") + ((e && e.message) || e);
     setStatus(msg, true);
   } finally {
     state.sending = false;
