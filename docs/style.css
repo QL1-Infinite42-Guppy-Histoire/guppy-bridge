@@ -1,35 +1,53 @@
+/* Guppy Bridge — UI Canon v2 (Qom DEX design language), accent slot #8 bridge teal.
+   Display layer only: angular clip-path cuts, 3D press-down buttons, steel tokens.
+   Legacy variable names are kept as aliases so no other rule had to change. */
 :root, :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f4f7ff; --card: #ffffff; --line: #dde4f3; --text: #131a2a;
-  --muted: #5b6a85; --accent: #2f6bff; --accent2: #ffa51f; --danger: #e5484d;
-  --accent-bright: #5b8cff; --accent-deep: #1c4ed8; --violet: #7c5cff;
-  --input-bg: #ffffff; --chip: #e9efff; --success: #00b578;
-  --panel: #eef3ff;
-  --bg-grad: linear-gradient(180deg, #dfeaff 0, #f4f7ff 320px);
-  --card-grad: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
-  --card-shadow: 0 12px 32px rgba(47,107,255,.12), 0 2px 6px rgba(19,26,42,.06);
-  --hero-shadow: 0 18px 40px rgba(47,107,255,.16), 0 2px 8px rgba(19,26,42,.06);
-  --btn-shadow: 0 8px 18px rgba(47,107,255,.30);
-  --edge-soft: rgba(19,26,42,.10);
+  --bg:#e8edf3; --bg2:#d7dfe9; --card:#f7fafc; --panel:#e2e8f0; --panel2:#cbd5e1;
+  --text:#0b1526; --muted:#5b6b82; --line:#b6c2d2; --line-d:#8fa1b8;
+  --accent:#0d9488; --accent-2:#2dd4bf; --accent-d:#115e59; --accent-ink:#ffffff;
+  --green:#16a34a; --red:#dc2626; --red-d:#991b1b;
+  --shadow-card:0 24px 48px -12px rgba(7,25,48,.35), 0 4px 10px rgba(7,25,48,.18), inset 0 1px 0 rgba(255,255,255,.9);
+  --shadow-btn:0 5px 0 var(--accent-d), 0 10px 18px rgba(13,148,136,.35), inset 0 1px 0 rgba(255,255,255,.45);
+  --shadow-chip:0 3px 0 var(--line-d), 0 6px 12px rgba(7,25,48,.15), inset 0 1px 0 rgba(255,255,255,.8);
+  --inset-panel:inset 0 2px 8px rgba(7,25,48,.18), inset 0 -1px 0 rgba(255,255,255,.65);
+  /* legacy aliases */
+  --accent-bright: var(--accent-2); --accent-deep: var(--accent-d); --violet: var(--accent);
+  --input-bg: var(--card); --chip: var(--panel); --success: var(--green); --danger: var(--red);
+  --accent2: #ffa51f;
+  --bg-grad: linear-gradient(160deg, var(--bg2), var(--bg) 45%, var(--bg2));
+  --card-grad: linear-gradient(175deg, var(--card), var(--panel));
+  --card-shadow: var(--shadow-card); --hero-shadow: var(--shadow-card);
+  --btn-shadow: var(--shadow-btn);
+  --edge-soft: var(--line-d);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #04060e; --card: #12151f; --line: #272d42; --text: #f2f4fa;
-  --muted: #b0bedd; --accent: #6b9dff; --accent2: #ffb020; --danger: #ff8589;
-  --accent-bright: #8fb6ff; --accent-deep: #2f5fd0; --violet: #9d85ff;
-  --input-bg: #0a0d16; --chip: #1c2233; --success: #2ee6a8;
-  --panel: #171c2c;
-  --bg-grad: linear-gradient(180deg, #0a1230 0, #04060e 320px);
-  --card-grad: linear-gradient(180deg, #151927 0%, #10131d 100%);
-  --card-shadow: 0 12px 32px rgba(0,0,0,.5);
-  --hero-shadow: 0 18px 40px rgba(0,0,0,.55);
-  --btn-shadow: 0 8px 18px rgba(0,0,0,.45);
-  --edge-soft: rgba(0,0,0,.35);
+  --bg:#05080e; --bg2:#0a1220; --card:#0d1626; --panel:#0a101d; --panel2:#111c30;
+  --text:#e8f1fc; --muted:#b0bedd; --line:#22344f; --line-d:#31496b;
+  --accent:#0d9488; --accent-2:#2dd4bf; --accent-d:#115e59; --accent-ink:#ffffff;
+  --green:#2ee6a8; --red:#ff8589; --red-d:#991b1b;
+  --shadow-card:0 24px 48px -12px rgba(0,0,0,.8), 0 4px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(148,197,255,.14);
+  --shadow-btn:0 5px 0 #062a44, 0 10px 18px rgba(13,148,136,.35), inset 0 1px 0 rgba(255,255,255,.35);
+  --shadow-chip:0 3px 0 #060d18, 0 6px 12px rgba(0,0,0,.45), inset 0 1px 0 rgba(148,197,255,.18);
+  --inset-panel:inset 0 2px 10px rgba(0,0,0,.6), inset 0 -1px 0 rgba(148,197,255,.08);
+  /* legacy aliases */
+  --accent-bright: var(--accent-2); --accent-deep: var(--accent-d); --violet: var(--accent);
+  --input-bg: var(--panel); --chip: var(--panel2); --success: var(--green); --danger: var(--red);
+  --accent2: #ffb020;
+  --bg-grad: linear-gradient(160deg, var(--bg2), var(--bg) 45%, var(--bg2));
+  --card-grad: linear-gradient(175deg, var(--card), var(--panel));
+  --card-shadow: var(--shadow-card); --hero-shadow: var(--shadow-card);
+  --btn-shadow: var(--shadow-btn);
+  --edge-soft: #060d18;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background-color: var(--bg); background-image: var(--bg-grad);
-  background-repeat: no-repeat; color: var(--text); line-height: 1.6;
-  font-family: "Nunito", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, -apple-system, "Noto Sans JP", sans-serif; }
+body { margin: 0; color: var(--text); line-height: 1.6;
+  background:
+    linear-gradient(160deg, var(--bg2), var(--bg) 45%, var(--bg2)),
+    repeating-linear-gradient(115deg, transparent 0 46px, rgba(45,212,191,.05) 46px 47px);
+  background-attachment: fixed; min-height: 100vh;
+  font-family: "Space Grotesk", "Zen Kaku Gothic New", system-ui, -apple-system, "Noto Sans JP", sans-serif; }
 button, input, select, textarea { font: inherit; }
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
   padding: 20px 20px 8px; max-width: 1120px; margin: 0 auto; flex-wrap: wrap; }
@@ -38,31 +56,39 @@ button, input, select, textarea { font: inherit; }
 .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .lang-switch { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .lang-switch select { margin-left: 4px; background: var(--input-bg); color: var(--text);
-  border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; min-height: 36px; }
-.theme-toggle { background: var(--chip); color: var(--text); border: 1px solid var(--line);
-  border-radius: 12px; padding: 8px 14px; font-size: 13px; min-height: 44px; cursor: pointer; white-space: nowrap; }
-h1 { margin: 0 0 4px; font-size: 28px; font-weight: 800; }
-h2 { margin: 0 0 10px; font-size: 18px; font-weight: 800; }
+  border: 1px solid var(--line-d); padding: 6px 8px; font-size: 13px; min-height: 36px;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.theme-toggle { background: linear-gradient(180deg, var(--card), var(--panel)); color: var(--text); border: 1px solid var(--line-d);
+  padding: 8px 14px; font-size: 13px; min-height: 44px; cursor: pointer; white-space: nowrap;
+  box-shadow: var(--shadow-chip);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.theme-toggle:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-d); }
+h1 { margin: 0 0 4px; font-size: 28px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+h2 { margin: 0 0 10px; font-size: 19px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .sub { margin: 0; color: var(--muted); font-size: 13px; max-width: 560px; }
 main { max-width: 1120px; margin: 0 auto; padding: 8px 20px 40px;
   display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  padding: 20px; margin-top: 0; box-shadow: var(--card-shadow); width: 100%; }
+.card { position: relative; background: linear-gradient(175deg, var(--card), var(--panel)); border: 1px solid var(--line-d);
+  padding: 20px; margin-top: 0; box-shadow: var(--shadow-card); width: 100%;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent-2), transparent 55%, var(--accent-2)); opacity: .85; }
 .warn { border-color: var(--accent2); }
 .hidden { display: none !important; }
-button { background: var(--chip); color: var(--text); border: 1px solid var(--line);
-  border-radius: 12px; padding: 10px 16px; font-size: 15px; cursor: pointer; min-height: 44px;
-  box-shadow: inset 0 -3px 0 var(--edge-soft);
+button { background: linear-gradient(180deg, var(--card), var(--panel)); color: var(--text); border: 1px solid var(--line-d);
+  padding: 10px 16px; font-size: 15px; font-weight: 700; letter-spacing: .04em; cursor: pointer; min-height: 44px;
+  box-shadow: var(--shadow-chip);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
   transition: transform .06s ease, box-shadow .06s ease, filter .15s ease; }
 button:hover { filter: brightness(1.05); }
-button:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 -1px 0 var(--edge-soft); }
-button:disabled { opacity: .45; cursor: default; }
-button.primary { background: linear-gradient(180deg, var(--accent-bright), var(--accent));
-  border-color: transparent; color: #fff; font-weight: 800;
-  box-shadow: inset 0 -4px 0 var(--accent-deep), var(--btn-shadow); }
+button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-d); }
+button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+button.primary { background: linear-gradient(180deg, var(--accent-2), var(--accent) 55%, var(--accent-d));
+  border-color: var(--accent-d); color: var(--accent-ink); font-weight: 700; text-transform: uppercase;
+  box-shadow: var(--shadow-btn); }
 button.primary:hover:not(:disabled) { filter: brightness(1.06); }
-button.primary:active:not(:disabled) { transform: translateY(3px);
-  box-shadow: inset 0 -1px 0 var(--accent-deep), 0 3px 8px rgba(0,0,0,.18); }
+button.primary:active:not(:disabled) { transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--accent-d), 0 4px 8px rgba(13,148,136,.3), inset 0 1px 0 rgba(255,255,255,.3); }
 .addr { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
 .status { color: var(--accent2); font-size: 13px; }
@@ -76,9 +102,11 @@ select { background: var(--input-bg); color: var(--text); }
    near-white on a light popup (or the reverse) again. */
 select option { background: var(--input-bg); color: var(--text); }
 select option:checked { background: var(--chip); }
-input.amount { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--input-bg); color: var(--text); font-size: 16px; margin: 0; min-height: 44px; }
-input.amount:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(47,107,255,.22); }
+input.amount { width: 100%; padding: 12px; border: 1px solid var(--line-d);
+  background: var(--input-bg); color: var(--text); font-size: 16px; margin: 0; min-height: 44px;
+  box-shadow: var(--inset-panel);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+input.amount:focus { outline: none; border-color: var(--accent); box-shadow: var(--inset-panel), 0 0 0 2px rgba(13,148,136,.22); }
 .kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); padding: 3px 0; }
 .kv b { color: var(--text); font-weight: 700; text-align: right; }
 a { color: var(--accent); }
@@ -88,18 +116,21 @@ details.card summary { cursor: pointer; font-weight: 700; min-height: 44px; }
 #watchPanel { max-width: 620px; }
 
 /* ---------- header account (Connect button / connected address) ---------- */
-#accountBox button { border-radius: 999px; padding: 8px 18px; }
-#accountBox .addr { background: var(--chip); border: 1px solid var(--line); border-radius: 999px;
-  padding: 8px 14px; color: var(--text); }
+#accountBox button { padding: 8px 18px; }
+#accountBox .addr { background: linear-gradient(180deg, var(--card), var(--panel)); border: 1px solid var(--line-d);
+  padding: 8px 14px; color: var(--text); box-shadow: var(--shadow-chip);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
 
-/* ---------- bridge hero card (Uniswap / PancakeSwap style) ---------- */
-.bridge-card { max-width: 620px; border-radius: 24px; padding: 24px;
+/* ---------- bridge hero card ---------- */
+.bridge-card { max-width: 620px; padding: 24px;
   background: var(--card-grad); box-shadow: var(--hero-shadow); }
 .panels { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 14px 16px; }
+.panel { background: linear-gradient(180deg, var(--panel), var(--panel2)); border: 1px solid var(--line-d);
+  box-shadow: var(--inset-panel); padding: 14px 16px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
 .panel:focus-within { border-color: var(--accent); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.panel-label { color: var(--muted); font-size: 13px; font-weight: 700; }
+.panel-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 /* Dark theme: small labels read washed out at --muted, so panel and
    recipient labels use the full-strength text color there. */
 :root[data-theme="dark"] .panel-label,
@@ -109,12 +140,13 @@ details.card summary { cursor: pointer; font-weight: 700; min-height: 44px; }
 .panel-note { margin: 8px 0 0; }
 .bal-note { min-height: 20px; }
 
-/* icon pill selectors */
-.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--card);
-  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; min-height: 40px; flex: none;
-  box-shadow: 0 2px 6px rgba(19,26,42,.08); }
+/* icon pill selectors (token / select pill construction) */
+.pill { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(180deg, var(--card), var(--panel));
+  border: 1px solid var(--line-d); border-left: 4px solid var(--accent); padding: 3px 10px 3px 3px; min-height: 40px; flex: none;
+  box-shadow: var(--shadow-chip); }
+.pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-d); }
 .pill-icon { width: 30px; height: 30px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--violet)); color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
   font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .pill-select { width: auto; border: none; background: transparent; color: var(--text);
   font-size: 15px; font-weight: 700; padding: 4px 0; min-height: 32px;
@@ -125,39 +157,41 @@ details.card summary { cursor: pointer; font-weight: 700; min-height: 44px; }
 
 /* big amount input / receive display */
 input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; border: none;
-  font-size: 30px; font-weight: 800; padding: 2px 0; min-height: 48px; }
+  font-size: 26px; font-weight: 700; padding: 2px 0; min-height: 48px; }
 .panel input.amount-big:focus { outline: none; border-color: transparent; box-shadow: none; }
-.amount-display { flex: 1; min-width: 0; font-size: 30px; font-weight: 800; color: var(--text);
+.amount-display { flex: 1; min-width: 0; font-size: 26px; font-weight: 700; color: var(--text);
   padding: 2px 0; min-height: 48px; display: flex; align-items: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* flip button in the seam between the panels */
 .flip-wrap { display: flex; justify-content: center; margin: -15px 0; position: relative; z-index: 2; }
-#flipBtn { width: 44px; height: 44px; min-height: 44px; border-radius: 14px; padding: 0;
-  background: linear-gradient(135deg, var(--accent-bright), var(--violet));
-  border: 4px solid var(--card); color: #fff; font-size: 18px; line-height: 1;
+#flipBtn { width: 44px; height: 44px; min-height: 44px; padding: 0;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent) 55%, var(--accent-d));
+  border: 1px solid var(--accent-d); color: #fff; font-size: 18px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,.20), 0 6px 14px rgba(99,102,241,.35); }
-#flipBtn:active:not(:disabled) { transform: translateY(2px);
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.20), 0 3px 8px rgba(99,102,241,.30); }
+  box-shadow: var(--shadow-btn);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px); }
+#flipBtn:active:not(:disabled) { transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--accent-d), 0 4px 8px rgba(13,148,136,.3), inset 0 1px 0 rgba(255,255,255,.3); }
 
 /* balance % chips */
 .chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.chips button { padding: 8px 12px; font-size: 13px; font-weight: 700; min-height: 44px; background: var(--chip); border-radius: 999px; }
+.chips button { padding: 8px 12px; font-size: 13px; font-weight: 700; min-height: 44px;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
 .chips button:hover { border-color: var(--accent); color: var(--accent); }
 
 /* recipient panel */
 .panel-recipient { margin-top: 12px; }
-.field-inline { display: block; color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.field-inline { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
 .panel-recipient input.amount { background: transparent; border: none; font-size: 14px;
-  padding: 2px 0; min-height: 36px; border-radius: 0; }
+  padding: 2px 0; min-height: 36px; box-shadow: none; clip-path: none; }
 .panel-recipient input.amount:focus { outline: none; border-color: transparent; box-shadow: none; }
 
 /* quote block + single big action button */
 .quote-title { font-size: 15px; font-weight: 800; margin: 22px 0 6px; }
 .action-area { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
 .big-action { width: 100%; min-height: 56px; font-size: 17px; font-weight: 800;
-  border-radius: 16px; padding: 14px 20px; }
+  padding: 14px 20px; }
 .action-area .status { text-align: center; }
 
 /* ================= responsive =================
@@ -166,11 +200,10 @@ input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; 
    Tablet 641-1023px: hero card capped and centered, mid-size measure
    for the text sections, header intact.
    Desktop >=1024px: container stays 1120px; the hero card widens to
-   960px centered (user request 2026-11-18: use the PC width), with
-   From / To panels side by side and the flip button rotated in the
-   seam between them, quote rows flowing in two internal columns, and
-   watch / wallet-warning / Details / footer aligned to the same
-   960px column. Typography and spacing step up. */
+   960px centered, with From / To panels side by side and the flip
+   button rotated in the seam between them, quote rows flowing in two
+   internal columns, and watch / wallet-warning / Details / footer
+   aligned to the same 960px column. Typography and spacing step up. */
 
 /* ---------- smartphone ---------- */
 @media (max-width: 640px) {
@@ -184,7 +217,7 @@ input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; 
   /* long chain names must never push a panel wide */
   .pill { min-width: 0; }
   .pill-select { min-width: 0; }
-  input.amount-big, .amount-display { font-size: 26px; }
+  input.amount-big, .amount-display { font-size: 21px; }
 }
 
 /* ---------- tablet / intermediate ---------- */
@@ -208,7 +241,7 @@ input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; 
   /* hero card: wide — fills most of the 1120px container, centered.
      The card itself is a 2-column grid; every child spans both columns
      except the quote rows, which flow two per row. */
-  .bridge-card { max-width: 960px; padding: 28px; border-radius: 28px;
+  .bridge-card { max-width: 960px; padding: 28px;
     display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
   .bridge-card > * { grid-column: 1 / -1; }
   .bridge-card > .kv { grid-column: auto; }
@@ -217,9 +250,9 @@ input.amount-big { flex: 1; min-width: 0; width: auto; background: transparent; 
   .panels { display: grid; grid-template-columns: 1fr auto 1fr; column-gap: 8px; }
   .flip-wrap { margin: 0 -16px; align-self: center; }
   #flipBtn { transform: rotate(90deg); }
-  #flipBtn:active:not(:disabled) { transform: rotate(90deg) scale(.94);
-    box-shadow: inset 0 -1px 0 rgba(0,0,0,.20), 0 3px 8px rgba(99,102,241,.30); }
-  .panel { padding: 18px 20px; border-radius: 22px; }
+  #flipBtn:active:not(:disabled) { transform: rotate(90deg) translateY(4px);
+    box-shadow: 0 1px 0 var(--accent-d), 0 4px 8px rgba(13,148,136,.3), inset 0 1px 0 rgba(255,255,255,.3); }
+  .panel { padding: 18px 20px; }
   .panel-label { font-size: 14px; }
   input.amount-big, .amount-display { font-size: 34px; }
   .quote-title { font-size: 17px; }
