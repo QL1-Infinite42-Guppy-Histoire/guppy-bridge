@@ -259,7 +259,15 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
 - **Wallets**: `window.ethereum` only (MetaMask, FoxWallet EVM mode, …),
   with automatic switch/add for all four chains. Since v0.9.3 the wallet
   examples named anywhere in the site copy and this README are generic
-  only (MetaMask / FoxWallet); a unit-test guard keeps it that way. Since v0.9.0 the
+  only (MetaMask / FoxWallet); a unit-test guard keeps it that way.
+  Since v0.9.4 the Connect buttons (header + full-width action-area)
+  are always visible while disconnected, even when no provider exists
+  at page load: detection happens at click time (`window.ethereum` is
+  read fresh on every Connect click, and an `ethereum#initialized`
+  listener wires up provider events for late injections, as wallet
+  in-app browsers often inject only after load). The no-wallet
+  guidance card appears only after a Connect click found no provider,
+  and it never hides the Connect buttons. Since v0.9.0 the
   connected chip in the header opens a wallet dialog (full address +
   Disconnect), mirroring the QOM DEX frontend: disconnect first asks the wallet
   to revoke this site's `eth_accounts` permission via

@@ -166,20 +166,21 @@ function updateRouteNote() {
 
 /* ---------- wallet ---------- */
 function hasWallet() { return typeof window !== "undefined" && !!window.ethereum; }
+// The no-wallet guidance is shown only after a Connect click found no
+// provider (set in connect()); it never hides the Connect buttons.
+let walletNotice = false;
 function renderAccount() {
   const box = $("accountBox");
   box.innerHTML = "";
   // Presentation only: the action area shows ONE big button — the
   // full-width Connect button while disconnected, the Bridge button
   // once connected (PancakeSwap style). Both call the existing flows.
+  // The Connect buttons are ALWAYS visible while disconnected, even
+  // when no provider exists yet: detection happens at click time,
+  // because wallet in-app browsers often inject window.ethereum only
+  // after the page has loaded.
   const ac = $("actionConnectBtn"), sb = $("sendBtn");
-  if (!hasWallet()) {
-    $("walletMissing").classList.remove("hidden");
-    if (ac) ac.classList.add("hidden");
-    if (sb) sb.classList.add("hidden");
-    return;
-  }
-  $("walletMissing").classList.add("hidden");
+  $("walletMissing").classList.toggle("hidden", !(walletNotice && !hasWallet()));
   if (state.account) {
     // The connected chip is a button: tapping it opens the wallet
     // dialog (full address + Disconnect), same flow as the QOM DEX.
@@ -202,7 +203,16 @@ function renderAccount() {
   }
 }
 async function connect() {
-  if (!hasWallet()) return;
+  // Detection at click time: read the provider fresh — a wallet
+  // in-app browser may have injected window.ethereum after load.
+  // Only when there is genuinely no provider now do we show the
+  // guidance (the Connect buttons stay visible either way).
+  if (!hasWallet()) {
+    walletNotice = true;
+    renderAccount();
+    return;
+  }
+  walletNotice = false;
   try {
     const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
     if (accs && accs[0]) {
@@ -759,7 +769,14 @@ function init() {
     if (state.elapsedTimer) clearInterval(state.elapsedTimer);
     $("watchPanel").classList.add("hidden");
   });
-  if (hasWallet() && window.ethereum.on) {
+  // Provider event wiring. If the provider is injected late (wallet
+  // in-app browsers), the ethereum#initialized event re-runs this
+  // once it arrives; the Connect buttons work either way because
+  // connect() reads window.ethereum fresh at click time.
+  let providerWatched = false;
+  function watchProvider() {
+    if (providerWatched || !hasWallet() || !window.ethereum.on) return;
+    providerWatched = true;
     window.ethereum.on("accountsChanged", (accs) => {
       state.account = accs && accs[0] ? accs[0] : null;
       // Keep an open wallet dialog truthful: close it when the
@@ -771,6 +788,12 @@ function init() {
     });
     window.ethereum.on("chainChanged", () => refreshQuote());
   }
+  watchProvider();
+  window.addEventListener("ethereum#initialized", () => {
+    walletNotice = false;
+    watchProvider();
+    renderAccount();
+  }, { once: true });
   const saved = loadWatch();
   if (saved) {
     $("watchResume").textContent = t("watchResume");
