@@ -52,8 +52,8 @@ export function routeWarning(route, tokenKey) {
 // on-chain 2026-10-30). The official bridge.zaphod.one frontend catches
 // that revert and sends transferRemote with msg.value = 0, and deliveries
 // on these routes are real (Zaphod stats at the time: 159 BSC-origin and
-// 116 Ethereum-origin deliveries; GuppyWallet shipped these exact inbound
-// routes live in v2 on 2026-10-31 with this same behaviour). So on these
+// 116 Ethereum-origin deliveries; a wallet app also shipped these exact
+// inbound routes live in v2 on 2026-10-31 with this same behaviour). So on these
 // routes a quoteNative failure means "messaging fee 0", NOT "route
 // broken". All other checks (paused, allowedDestinations, quoteBridge,
 // min/max) still apply normally.
@@ -244,7 +244,7 @@ export async function checkBridgeRouter(route, tokenEntry, amountRaw) {
   } catch (e) { out.quoteNative = null; }
   if (!out.quoteNative && out.nativeOptional) {
     // Older BSC/Ethereum routers revert quoteNative — mirror the official
-    // frontend (and GuppyWallet v2): treat the messaging fee as 0 and send
+    // frontend (and the wallet app v2): treat the messaging fee as 0 and send
     // with value 0. Deliveries on these routes are proven (see README).
     out.quoteNative = { nativeFee: 0n, gasPayment: 0n, totalNative: 0n };
     out.nativeFallback = true;

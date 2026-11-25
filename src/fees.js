@@ -12,7 +12,7 @@
 //       QL1 routes and WBTC -> Ethereum quote ~2.932 [42].
 //       EXCEPTION (nativeOptional): the BSC/Ethereum SOURCE routers are
 //       older versions (1.1.0 / 1.2.0) whose quoteNative reverts. Like the
-//       official frontend (and GuppyWallet v2, shipped 2026-10-31), the
+//       official frontend (and the wallet app v2, shipped 2026-10-31), the
 //       messaging fee then falls back to 0 and the send uses value 0;
 //       deliveries on those inbound routes are proven. See chain.js.
 //   - QL1 source (no BridgeRouter): bridge fee 0, messaging fee 0
