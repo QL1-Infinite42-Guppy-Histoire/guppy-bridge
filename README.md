@@ -210,6 +210,18 @@ PC（1024px〜）のレイアウトを広げました（CSS のみ）。これ�
 このチェックの対象外です（送信直前の構造確認は従来どおり実施）。
 送信の組み立て自体（送信先・コールデータ・付随させる値）は無変更です。
 
+## ウォレット切断ダイアログ（v0.9.0、2026-11-25）
+QOM DEX（qomdex.com）と操作を統一しました。接続中にヘッダーの
+「接続中: 0x…」チップを押すと小さなダイアログが開き、接続中の
+アドレス全文と「接続を解除」ボタンを表示します。解除時は、対応
+ウォレットには `wallet_revokePermissions`（`eth_accounts`）で
+サイトの許可取り消しを先に依頼し（非対応ウォレットではエラー
+を無視）、その後ローカル状態をクリアします。このサイトは接続
+状態を保存せず、接続は常に明示的なボタン操作でのみ行うため、
+解除後に再読み込みしても勝手に再接続しません。解除後は残高・
+見積もり表示もクリアされます（v0.8.1 の切断時挙動と同じ経路）。
+ダイアログは ✕ ボタン・背景タップ・Esc で解除せずに閉じられます。
+
 ## 開発
 ```sh
 npm install
@@ -231,7 +243,14 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   (`ja.html`) only when that choice was saved (`guppybridge_lang` in localStorage).
   UI strings live in `src/i18n.js`; all fee logic is isolated in `src/fees.js`.
 - **Wallets**: `window.ethereum` only (MetaMask, FoxWallet EVM mode, GuppyWallet
-  extension, …), with automatic switch/add for all four chains.
+  extension, …), with automatic switch/add for all four chains. Since v0.9.0 the
+  connected chip in the header opens a wallet dialog (full address +
+  Disconnect), mirroring the QOM DEX frontend: disconnect first asks the wallet
+  to revoke this site's `eth_accounts` permission via
+  `wallet_revokePermissions` where supported (errors ignored), then clears the
+  local state. The site never auto-reconnects — connection is explicit-only and
+  no "was connected" state is persisted, so a reload after disconnect stays
+  disconnected.
 - **Routes**: QL1 ⇄ 42 Chain (QOM, BABY, CAW, FATHER, HAWK, KET, O, OSAK),
   42 Chain ⇄ BSC (USDT, USDC), 42 Chain ⇄ Ethereum (USDT/USDC at 6 decimals on
   the Ethereum side, WBTC at 8). Amount chips 25/50/75/MAX, editable recipient,

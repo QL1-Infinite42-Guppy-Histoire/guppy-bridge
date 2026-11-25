@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./style.css?v=8" />
+<link rel="stylesheet" href="./style.css?v=9" />
 </head>
 <body>
   <header class="top">
@@ -163,7 +163,17 @@
     </p>
   </main>
 
-  <script src="./app.js?v=2"></script>
+  <dialog id="connDlg" aria-labelledby="connDlgTitle">
+    <h3 id="connDlgTitle">ウォレット接続中</h3>
+    <p class="conn-addr" id="connAddr">—</p>
+    <p class="note" id="connDlgNote">接続を解除すると、このサイトとウォレットのつながりが切れます。資産はウォレットにそのまま残ります。</p>
+    <div class="row conn-actions">
+      <button id="disconnectBtn" type="button" class="danger">接続を解除</button>
+      <button id="connClose" type="button">閉じる</button>
+    </div>
+  </dialog>
+
+  <script src="./app.js?v=3"></script>
 <script>
 (function(){
   var btn=document.getElementById('themeToggle'); if(!btn) return;

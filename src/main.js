@@ -155,9 +155,13 @@ function renderAccount() {
   }
   $("walletMissing").classList.add("hidden");
   if (state.account) {
-    const s = document.createElement("span");
+    // The connected chip is a button: tapping it opens the wallet
+    // dialog (full address + Disconnect), same flow as the QOM DEX.
+    const s = document.createElement("button");
+    s.type = "button";
     s.className = "addr";
     s.textContent = t("connectedAs") + shortAddr(state.account);
+    s.onclick = openConnDialog;
     box.appendChild(s);
     if (ac) ac.classList.add("hidden");
     if (sb) sb.classList.remove("hidden");
@@ -185,6 +189,43 @@ async function connect() {
   } catch (e) {
     setStatus(t("connectFailed") + (e.message || e), true);
   }
+}
+/* ---------- wallet dialog (connected / disconnect) ----------
+   Same behaviour as the QOM DEX frontend: tapping the connected
+   chip opens a small dialog with the full address and a Disconnect
+   button. Disconnect first asks the wallet to revoke this site's
+   account permission where it supports that (MetaMask:
+   wallet_revokePermissions) and then clears the local state either
+   way. This site keeps no persisted "was connected" hint and only
+   ever connects on an explicit button press, so after a disconnect
+   a page reload stays disconnected. */
+function openConnDialog() {
+  if (!state.account) return;
+  const dlg = $("connDlg");
+  if (!dlg) return;
+  $("connAddr").textContent = state.account;
+  if (typeof dlg.showModal === "function") { if (!dlg.open) dlg.showModal(); }
+  else dlg.setAttribute("open", "");
+}
+function closeConnDialog() {
+  const dlg = $("connDlg");
+  if (!dlg) return;
+  if (typeof dlg.close === "function") { if (dlg.open) dlg.close(); }
+  else dlg.removeAttribute("open");
+}
+async function disconnectWallet() {
+  if (hasWallet()) {
+    try {
+      await window.ethereum.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    } catch (e) { /* wallet without revoke support: local disconnect only */ }
+  }
+  state.account = null;
+  closeConnDialog();
+  renderAccount();
+  refreshQuote();
 }
 async function ensureChain(chainKey) {
   const c = CHAINS[chainKey];
@@ -673,6 +714,18 @@ function init() {
   $("sendBtn").addEventListener("click", doSend);
   const acb = $("actionConnectBtn");
   if (acb) acb.addEventListener("click", connect);
+  const connDlg = $("connDlg");
+  if (connDlg) {
+    $("connDlgTitle").textContent = t("walletDlgTitle");
+    $("connDlgNote").textContent = t("walletDlgNote");
+    $("disconnectBtn").textContent = t("disconnectBtn");
+    $("connClose").textContent = t("closeBtn");
+    $("connClose").addEventListener("click", closeConnDialog);
+    $("disconnectBtn").addEventListener("click", disconnectWallet);
+    // Backdrop tap dismisses without disconnecting (Esc is native
+    // to <dialog>); clicks inside the card itself must not close it.
+    connDlg.addEventListener("click", (e) => { if (e.target === connDlg) closeConnDialog(); });
+  }
   $("watchClear").addEventListener("click", () => {
     try { localStorage.removeItem(WATCH_KEY); } catch (e) { /* ignore */ }
     state.watch = null;
@@ -683,6 +736,10 @@ function init() {
   if (hasWallet() && window.ethereum.on) {
     window.ethereum.on("accountsChanged", (accs) => {
       state.account = accs && accs[0] ? accs[0] : null;
+      // Keep an open wallet dialog truthful: close it when the
+      // account goes away (e.g. a revoke landing), follow a switch.
+      if (!state.account) closeConnDialog();
+      else if (connDlg && connDlg.open) $("connAddr").textContent = state.account;
       renderAccount();
       refreshQuote();
     });
