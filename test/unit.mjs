@@ -138,4 +138,22 @@ assert.deepEqual(driftGate({ ...qomCtx, receiveRaw: 1000000000000000000n }, qomC
   }
 }
 
+// Chain logos (v0.9.6): all four chains carry a logo asset wired into
+// CHAIN_LOGOS, present in src/ and copied into docs/ by the build.
+{
+  const { readFileSync, existsSync } = await import("node:fs");
+  const main = readFileSync("src/main.js", "utf8");
+  const logos = {
+    ql1: "ql1-logo.png",
+    infinite: "chain42-logo.png",
+    bsc: "bsc-logo.png",
+    ethereum: "eth-logo.png",
+  };
+  for (const [key, file] of Object.entries(logos)) {
+    assert.ok(main.includes(`${key}: { src: "./${file}"`), `CHAIN_LOGOS missing ${key}`);
+    assert.ok(existsSync(`src/${file}`), `src/${file} missing`);
+    if (existsSync("docs/app.js")) assert.ok(existsSync(`docs/${file}`), `docs/${file} missing (build copies it)`);
+  }
+}
+
 console.log("unit tests OK");

@@ -237,6 +237,13 @@ QL1 を表す箇所（From／To のチェーンピルのアイコン）に、QL1
 BSC（B）と Ethereum（Ξ）の文字アバター、トークンのアイコンは
 従来どおりです。
 
+## BSC・Ethereum チェーンロゴ（v0.9.6、2026-11-25）
+BSC と Ethereum を表す箇所（From／To のチェーンピルのアイコン）にも、
+各チェーンのロゴ（円形 PNG、`src/bsc-logo.png`／`src/eth-logo.png`、
+256×256）を使うようにしました。QL1・42 Chain と同じ円形スロット・
+同じ仕組みで、これで4チェーンすべてにロゴがそろいました。トークンの
+アイコンと、見積もり・送信の仕組みは従来どおりです。
+
 ## 開発
 ```sh
 npm install
@@ -280,8 +287,11 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   same 30px circular slot; other chains' letter avatars and the token icons
   are unchanged. Since v0.9.2 the 42 Chain pill icon likewise shows the
   42 Chain logo (`src/chain42-logo.png`, circular crop of the black-square
-  artwork) instead of the "42" letter avatar; BSC (B) and Ethereum (Ξ) keep
-  their letter avatars.
+  artwork) instead of the "42" letter avatar. Since v0.9.6 the BSC and
+  Ethereum pill icons likewise show their chain logos (`src/bsc-logo.png`,
+  `src/eth-logo.png`, circular PNGs) instead of the "B" / "Ξ" letter
+  avatars, so all four chains now carry logo marks; token icons and the
+  quote/send mechanics are unchanged.
 - **Routes**: QL1 ⇄ 42 Chain (QOM, BABY, CAW, FATHER, HAWK, KET, O, OSAK),
   42 Chain ⇄ BSC (USDT, USDC), 42 Chain ⇄ Ethereum (USDT/USDC at 6 decimals on
   the Ethereum side, WBTC at 8). Amount chips 25/50/75/MAX, editable recipient,
