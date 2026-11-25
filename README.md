@@ -244,6 +244,13 @@ BSC と Ethereum を表す箇所（From／To のチェーンピルのアイコ�
 同じ仕組みで、これで4チェーンすべてにロゴがそろいました。トークンの
 アイコンと、見積もり・送信の仕組みは従来どおりです。
 
+## v1.0.0（2026-11-25）
+このサイト経由で初の実送金が成功したこと（2026-11-25、BSC の
+USDT 3ドル → 42 Chain、着金確認済み）を受け、バージョンを
+1.0.0 としました。全26ルートの見積もり・送信・到着見守りが
+実送金でも確認できた節目です。このバージョン自体に機能の
+変更はありません（バージョン番号と記録のみ）。
+
 ## 開発
 ```sh
 npm install
@@ -291,7 +298,11 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   Ethereum pill icons likewise show their chain logos (`src/bsc-logo.png`,
   `src/eth-logo.png`, circular PNGs) instead of the "B" / "Ξ" letter
   avatars, so all four chains now carry logo marks; token icons and the
-  quote/send mechanics are unchanged.
+  quote/send mechanics are unchanged. v1.0.0 (2026-11-25) is the 1.0
+  milestone: the first real end-to-end send through this frontend
+  succeeded (3 USDT, BSC → 42 Chain, arrival confirmed), proving the
+  quotes, send flow and arrival watch with real funds; the bump itself
+  changes no behaviour.
 - **Routes**: QL1 ⇄ 42 Chain (QOM, BABY, CAW, FATHER, HAWK, KET, O, OSAK),
   42 Chain ⇄ BSC (USDT, USDC), 42 Chain ⇄ Ethereum (USDT/USDC at 6 decimals on
   the Ethereum side, WBTC at 8). Amount chips 25/50/75/MAX, editable recipient,
