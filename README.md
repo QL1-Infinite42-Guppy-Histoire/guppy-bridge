@@ -141,8 +141,9 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
   の見積もり失敗のときは送信ボタンを押せないようにしています。
 
 ## 正直な制限
-- **実際の送金はまだテストしていません。** 読み取りと見積もりは全ルートでライブ確認済みですが、
-  このサイトからの初回の送信が、そのままエンドツーエンドの確認になります。少額から試してください。
+- **初の実送金は成功済みです（2026年11月25日）。** BSC の USDT 3ドル → 42 Chain をこのサイトから
+  送り、着金まで確認しました（BSC 側 tx：0x84c9…ee15／42 側の着金 tx：0x3af5…a5f）。
+  読み取りと見積もりは全ルートでライブ確認済みです。初めて送るときは少額から試してください。
 - 到着には数分かかります（実測した 42→QL1 の QOM 1件は約337秒）。
 - 価格や APY の表示はありません（このサイトは価格を持ちません）。
 
@@ -346,5 +347,8 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   unproven-route warning (zero sends in that direction in the router's whole
   history; QL1->42 Chain OSAK is proven, 2/2 sampled). The DEX aggregator
   keeps its own OSAK-disabled rule — different product, unchanged.
-- **Honest limit**: read/quote-verified only — **no real-money send has been
-  made from this site yet**; the first small transfer is the end-to-end check.
+- **First real send: done (2026-11-25).** 3 USDT was sent from BSC to
+  42 Chain through this site and confirmed arrived (BSC tx 0x84c9…ee15;
+  42 Chain arrival tx 0x3af5…a5f), completing the end-to-end check.
+  Read/quote verification covers all routes; still start with a small
+  amount on your own first send.
