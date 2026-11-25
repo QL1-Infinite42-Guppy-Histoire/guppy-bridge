@@ -745,7 +745,12 @@ function init() {
       const pct = Number(b.dataset.pct);
       const v = percentOf(state.tokenBal, pct);
       $("amountInput").value = formatAmount(v, tk.src.decimals, tk.src.decimals);
-      if (pct === 100 && currentRoute()?.from !== "ql1") $("validLine").textContent = t("maxWarnNative");
+      // MAX warning: shown whenever the send could strand the gas coin.
+      // On BridgeRouter routes the messaging fee is paid in the native
+      // coin; on QL1 routes the fee is 0, but QOM itself is the gas coin,
+      // so MAX of QOM would still leave nothing for gas (audit 2026-11-25).
+      if (pct === 100 && (currentRoute()?.from !== "ql1" || state.tokenKey === "QOM"))
+        $("validLine").textContent = t("maxWarnNative");
       refreshQuote();
     });
   });

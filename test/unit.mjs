@@ -138,6 +138,16 @@ assert.deepEqual(driftGate({ ...qomCtx, receiveRaw: 1000000000000000000n }, qomC
   }
 }
 
+// Community framing (audit 2026-11-25): both pages must carry the
+// unofficial / community-built line in the footer.
+{
+  const { readFileSync } = await import("node:fs");
+  assert.ok(readFileSync("en.html", "utf8").includes("Unofficial and built by the community."),
+    "en.html footer community line missing");
+  assert.ok(readFileSync("ja.html", "utf8").includes("公式ではなく、コミュニティによる開発です"),
+    "ja.html footer community line missing");
+}
+
 // Chain logos (v0.9.6): all four chains carry a logo asset wired into
 // CHAIN_LOGOS, present in src/ and copied into docs/ by the build.
 {

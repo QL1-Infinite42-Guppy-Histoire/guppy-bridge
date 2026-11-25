@@ -200,6 +200,21 @@ export async function readAllowance(chainKey, tokenAddr, owner, spender) {
   // path must fail closed rather than assume an allowance of 0.
   return decUint(hex);
 }
+// One retry for a single read (audit 2026-11-25): the free public RPC
+// endpoints — BSC's especially — drop individual eth_calls at a
+// noticeable rate, and rpcCall already rotates endpoints per call, so a
+// second attempt a moment later almost always lands. Without this, one
+// dropped read made the whole route check fail closed ("route not
+// allowed / quote failed") until the next manual refresh, even though
+// the route was fine. Read-path only; no send behaviour changes.
+async function readRetry(fn) {
+  try { return await fn(); }
+  catch (e) {
+    await new Promise((r) => setTimeout(r, 400));
+    return fn();
+  }
+}
+
 // Full live check + quote for a BridgeRouter route. Returns null fields on
 // failure rather than throwing for each individual call, so the UI can say
 // exactly what failed.
@@ -209,7 +224,7 @@ export async function checkBridgeRouter(route, tokenEntry, amountRaw) {
   const out = { kind: "bridgeRouter", target: br };
   out.nativeOptional = nativeOptional(route);
   out.nativeFallback = false;
-  const call = async (data) => ethCall(route.from, br, data);
+  const call = async (data) => readRetry(() => ethCall(route.from, br, data));
   try { out.version = await call(SEL.version).then((h) => decodeString(h)); }
   catch (e) { out.version = null; }
   try { out.paused = decBool(await call(SEL.paused)); } catch (e) { out.paused = null; }
@@ -271,10 +286,10 @@ export async function checkWarpRouter(route, tokenEntry) {
   const router = tokenEntry.src.router;
   const out = { kind: "warp", target: router };
   try {
-    const code = await getCode(route.from, router);
+    const code = await readRetry(() => getCode(route.from, router));
     out.codeBytes = code && code !== "0x" ? (code.length - 2) / 2 : 0;
   } catch (e) { out.codeBytes = null; }
-  try { out.mailbox = decAddr(await ethCall(route.from, router, SEL.mailboxFn)); }
+  try { out.mailbox = decAddr(await readRetry(() => ethCall(route.from, router, SEL.mailboxFn))); }
   catch (e) { out.mailbox = null; }
   return out;
 }
