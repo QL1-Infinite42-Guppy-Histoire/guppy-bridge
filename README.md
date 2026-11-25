@@ -15,8 +15,8 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
 - English: https://ql1-infinite42-guppy-histoire.github.io/guppy-bridge/en.html
 
 ## 対応ウォレット
-- **EVM ウォレット全般**（`window.ethereum`）：MetaMask、FoxWallet（EVM モード）、
-  GuppyWallet ブラウザ拡張機能など。4チェーン（42 Chain `0x66c9a`、QL1 `0x2fe`、
+- **EVM ウォレット全般**（`window.ethereum`）：MetaMask、FoxWallet（EVM モード）
+  など。4チェーン（42 Chain `0x66c9a`、QL1 `0x2fe`、
   BSC `0x38`、Ethereum `0x1`）へ自動で切り替え／追加を提案します。
 
 ## できること
@@ -39,7 +39,7 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
   ただし **BSC／Ethereum 発（42 Chain 向け）は例外**です。送信元ルーターが旧バージョン
   （1.1.0／1.2.0）で `quoteNative` がエラー（revert）になるため、公式サイト
   bridge.zaphod.one と同じく、中継手数料は **0（金額 0 で送信）** として扱います
-  （この方式は GuppyWallet が 2026-10-30 にオンチェーン検証し、v2 で実装済みのものです）。
+  （この方式は 2026-10-30 にオンチェーン検証され、ウォレットアプリ v2 で実装済みのものです）。
 - QL1 から送る場合：BridgeRouter は無いので、**Hyperlane ワープルーター**へ使用許可をし、
   金額 0 で `transferRemote` を直接呼びます（実送信サンプル全件が 0 でした・2026-11-06 検証）。
 - 宛先ドメイン＝宛先チェーンの EVM チェーンID。到着確認は宛先チェーンの Hyperlane
@@ -135,8 +135,8 @@ bridge.zaphod.one と**同じルート・同じ契約**を使う、Guppy's Guide
   （別プロダクトであり、そちらの方針は変更していません）。
 - **訂正履歴**：v0.3.0 までは BSC／Ethereum 発（42 Chain 向け）も無効にしていましたが、
   それは誤りでした。旧契約が `quoteNative` に答えないことは、公式フロントエンドが
-  「中継手数料 0 で送る」合図であり、無効化の理由にはなりません（GuppyWallet が
-  2026-10-30 にオンチェーン検証し、v2 で同じ方式で実装済み）。v0.4.0 で有効化しました。
+  「中継手数料 0 で送る」合図であり、無効化の理由にはなりません（2026-10-30 に
+  オンチェーン検証され、ウォレットアプリ v2 で同じ方式で実装済み）。v0.4.0 で有効化しました。
 - なお、サイトは送信直前にもライブ確認をやり直し、停止中・宛先不許可・`quoteBridge`
   の見積もり失敗のときは送信ボタンを押せないようにしています。
 
@@ -256,8 +256,10 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
 - **Language**: the root page is a language gate — English by default, Japanese
   (`ja.html`) only when that choice was saved (`guppybridge_lang` in localStorage).
   UI strings live in `src/i18n.js`; all fee logic is isolated in `src/fees.js`.
-- **Wallets**: `window.ethereum` only (MetaMask, FoxWallet EVM mode, GuppyWallet
-  extension, …), with automatic switch/add for all four chains. Since v0.9.0 the
+- **Wallets**: `window.ethereum` only (MetaMask, FoxWallet EVM mode, …),
+  with automatic switch/add for all four chains. Since v0.9.3 the wallet
+  examples named anywhere in the site copy and this README are generic
+  only (MetaMask / FoxWallet); a unit-test guard keeps it that way. Since v0.9.0 the
   connected chip in the header opens a wallet dialog (full address +
   Disconnect), mirroring the QOM DEX frontend: disconnect first asks the wallet
   to revoke this site's `eth_accounts` permission via
@@ -292,7 +294,7 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   Exception: BSC/Ethereum as the SOURCE (toward 42 Chain) — their routers are
   older versions (1.1.0 / 1.2.0) whose `quoteNative` reverts, so, exactly like
   the official frontend, the messaging fee falls back to 0 and the send uses
-  value 0 ("nativeOptional"; verified on-chain 2026-10-30 for GuppyWallet v2).
+  value 0 ("nativeOptional"; verified on-chain 2026-10-30 for the wallet app v2).
 - **Fees (all live-quoted, never hard-coded)**: bridge fee from `quoteBridge` —
   flat 2.0 tokens for USDT/USDC leaving 42 Chain (the contract's on-chain
   feeFlat, set by its Zaphod/MT-side owner; a frontend cannot waive it), 0

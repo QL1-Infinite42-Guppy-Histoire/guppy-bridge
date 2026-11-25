@@ -121,4 +121,21 @@ const qomCtx = { fromKey: "infinite", toKey: "ql1", tokenKey: "QOM", amountRaw: 
 assert.deepEqual(driftGate({ ...qomCtx, receiveRaw: 1000000000000000000n }, qomCtx, 1000000000000000000n),
   { action: "proceed" });
 
+// Guard (2026-11-25, user order): the erased wallet name must never creep
+// back into any site-facing copy or the built bundle. Scans the page
+// sources, the string table, the app entry, and the built docs output.
+{
+  const { readFileSync, existsSync } = await import("node:fs");
+  const banned = /guppy\s*wallet|グッピーウォレット/i;
+  const files = [
+    "en.html", "ja.html", "index.html",
+    "src/i18n.js", "src/main.js",
+    "docs/en.html", "docs/ja.html", "docs/index.html", "docs/app.js",
+  ];
+  for (const f of files) {
+    if (!existsSync(f)) continue; // docs/ absent on a fresh checkout pre-build
+    assert.ok(!banned.test(readFileSync(f, "utf8")), `banned wallet name found in ${f}`);
+  }
+}
+
 console.log("unit tests OK");
