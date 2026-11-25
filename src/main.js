@@ -56,6 +56,7 @@ const CHAIN_ICON = { infinite: "42", ql1: "Q", bsc: "B", ethereum: "Ξ" };
    unaffected — this is the chain mark only. */
 const CHAIN_LOGOS = {
   ql1: { src: "./ql1-logo.png", alt: "QL1" },
+  infinite: { src: "./chain42-logo.png", alt: "42 Chain" },
 };
 function setChainIcon(id, key) {
   const el = $(id);
