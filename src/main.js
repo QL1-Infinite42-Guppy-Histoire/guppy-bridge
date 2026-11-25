@@ -51,11 +51,36 @@ function shortAddr(a) {
 /* Presentation only: keep the icon-pill avatars (chain / token initials)
    in sync with the current selection. No effect on quoting or sending. */
 const CHAIN_ICON = { infinite: "42", ql1: "Q", bsc: "B", ethereum: "Ξ" };
+/* Chains with a real logo asset render it (circular-cropped PNG in
+   the same 30px slot) instead of the letter avatar. Token icons are
+   unaffected — this is the chain mark only. */
+const CHAIN_LOGOS = {
+  ql1: { src: "./ql1-logo.png", alt: "QL1" },
+};
+function setChainIcon(id, key) {
+  const el = $(id);
+  if (!el) return;
+  const logo = CHAIN_LOGOS[key];
+  if (logo) {
+    let img = el.querySelector("img.chain-logo");
+    if (!img) {
+      el.textContent = "";
+      img = document.createElement("img");
+      img.className = "chain-logo";
+      el.appendChild(img);
+    }
+    if (img.getAttribute("src") !== logo.src) { img.src = logo.src; img.alt = logo.alt; }
+    el.classList.add("has-logo");
+  } else {
+    el.classList.remove("has-logo");
+    el.textContent = CHAIN_ICON[key] || "?";
+  }
+}
 function syncPillIcons() {
   const tk = currentToken();
   const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
-  set("fromChainIcon", CHAIN_ICON[state.fromKey] || "?");
-  set("toChainIcon", CHAIN_ICON[state.toKey] || "?");
+  setChainIcon("fromChainIcon", state.fromKey);
+  setChainIcon("toChainIcon", state.toKey);
   set("tokenIcon", tk ? tk.key.slice(0, 1) : "?");
   set("tokenIconTo", tk ? tk.key.slice(0, 1) : "?");
   set("tokenNameTo", tk ? tk.key : "");

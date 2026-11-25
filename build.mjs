@@ -14,4 +14,5 @@ cpSync("index.html", "docs/index.html");
 cpSync("ja.html", "docs/ja.html");
 cpSync("en.html", "docs/en.html");
 cpSync("src/style.css", "docs/style.css");
+cpSync("src/ql1-logo.png", "docs/ql1-logo.png");
 console.log("docs/ ready");

@@ -164,6 +164,9 @@ button.danger:active:not(:disabled) { transform: translateY(4px);
 .pill-icon { width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
   font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+/* chain logo assets (e.g. the QL1 eagle) fill the same circular slot */
+.pill-icon.has-logo { background: none; overflow: hidden; }
+.pill-icon img.chain-logo { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 .pill-select { width: auto; border: none; background: transparent; color: var(--text);
   font-size: 15px; font-weight: 700; padding: 4px 0; min-height: 32px;
   appearance: none; -webkit-appearance: none; cursor: pointer; }

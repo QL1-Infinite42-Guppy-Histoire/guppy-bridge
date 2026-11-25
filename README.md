@@ -222,6 +222,13 @@ QOM DEX（qomdex.com）と操作を統一しました。接続中にヘッダー
 見積もり表示もクリアされます（v0.8.1 の切断時挙動と同じ経路）。
 ダイアログは ✕ ボタン・背景タップ・Esc で解除せずに閉じられます。
 
+## QL1 チェーンロゴ（v0.9.1、2026-11-25）
+QL1 を表す箇所（From／To のチェーンピルのアイコン）に、QL1 の
+イーグルロゴ（円形 PNG、`src/ql1-logo.png`、256×256）を使うように
+しました。従来の「Q」の文字アバターと同じ 30px の円形スロットに
+表示され、レイアウトは変わりません。他チェーンの文字アバターと
+トークンのアイコンは従来どおりです。
+
 ## 開発
 ```sh
 npm install
@@ -250,7 +257,10 @@ A Guppy's Guide product, sister site to the DEX Aggregator and the staking sites
   `wallet_revokePermissions` where supported (errors ignored), then clears the
   local state. The site never auto-reconnects — connection is explicit-only and
   no "was connected" state is persisted, so a reload after disconnect stays
-  disconnected.
+  disconnected. Since v0.9.1 the QL1 chain pill icon shows the QL1 eagle logo
+  (circular PNG, `src/ql1-logo.png`) instead of the "Q" letter avatar, in the
+  same 30px circular slot; other chains' letter avatars and the token icons
+  are unchanged.
 - **Routes**: QL1 ⇄ 42 Chain (QOM, BABY, CAW, FATHER, HAWK, KET, O, OSAK),
   42 Chain ⇄ BSC (USDT, USDC), 42 Chain ⇄ Ethereum (USDT/USDC at 6 decimals on
   the Ethereum side, WBTC at 8). Amount chips 25/50/75/MAX, editable recipient,
